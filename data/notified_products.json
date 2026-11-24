@@ -88,5 +88,41 @@
     "discount": 65.1,
     "link": "https://www.magazineluiza.com.br/smart-tv-43-full-hd-led-semp-s42-google-tv-2-hdmi/p/240292600/et/elit/",
     "notified_at": "2026-11-24T00:21:41.133319"
+  },
+  "magazine luiza_mag_aebgk9cd33": {
+    "id": "mag_aebgk9cd33",
+    "name": "Quarto de Bebê Completo com Berço 3 em 1 para Colchão 130x60cm Sol Multimóveis MP4526",
+    "store": "Magazine Luiza",
+    "price": 1299.99,
+    "discount": 71.0,
+    "link": "https://www.magazineluiza.com.br/quarto-de-bebe-completo-com-berco-3-em-1-para-colchao-130x60cm-sol-multimoveis-mp4526/p/aebgk9cd33/mo/qtic/",
+    "notified_at": "2026-11-24T03:24:09.982067"
+  },
+  "magazine luiza_mag_baff8h48jb": {
+    "id": "mag_baff8h48jb",
+    "name": "Antena Parabólica Digital Century 60cm Banda Ku, Midiabox SE2 Kit Completo",
+    "store": "Magazine Luiza",
+    "price": 203.15,
+    "discount": 71.0,
+    "link": "https://www.magazineluiza.com.br/antena-parabolica-digital-century-60cm-banda-ku-midiabox-se2-kit-completo/p/baff8h48jb/et/atpb/",
+    "notified_at": "2026-11-24T03:24:11.716049"
+  },
+  "magazine luiza_mag_ah5eh608c7": {
+    "id": "mag_ah5eh608c7",
+    "name": "Antena Parabólica Century 60cm Banda Ku Receptor Midiabox SE2 Century Kit Completo",
+    "store": "Magazine Luiza",
+    "price": 220.15,
+    "discount": 68.5,
+    "link": "https://www.magazineluiza.com.br/antena-parabolica-century-60cm-banda-ku-receptor-midiabox-se2-century-kit-completo/p/ah5eh608c7/et/rcpt/",
+    "notified_at": "2026-11-24T03:24:13.285058"
+  },
+  "americanas_ame_5369604": {
+    "id": "ame_5369604",
+    "name": "Guarda-Roupa Casal de Correr Modern Isabela MDP 3 Portas 9 Gavetas Branco",
+    "store": "Americanas",
+    "price": 527.99,
+    "discount": 64.6,
+    "link": "https://www.americanas.com.br/guarda-roupa-casal-isabela-3-pt-9-gv-branco-7510888018-5369604/p",
+    "notified_at": "2026-11-24T03:24:14.033772"
   }
 }
