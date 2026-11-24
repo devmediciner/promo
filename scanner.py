@@ -1,12 +1,21 @@
 import requests
 import json
+import os
 import time
 import logging
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from database import init_db, bulk_upsert_products, log_scan
+from database import init_db, bulk_upsert_products, log_scan, get_stats
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('promo_scanner')
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
+
+JSON_OUTPUT_PATH = os.path.join(DATA_DIR, 'promos.json')
+ROOT_JSON_OUTPUT_PATH = os.path.join(BASE_DIR, 'promos.json')
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -23,7 +32,6 @@ PREMIUM_BRANDS = [
     'pampers', 'huggies', 'growth', 'max titanium', 'integralmedica', 'optimum nutrition'
 ]
 
-# Principais Departamentos da Pague Menos
 DEPARTMENTS = {
     '100': 'Medicamentos e Saúde',
     '200': 'Higiene Pessoal',
@@ -35,9 +43,6 @@ DEPARTMENTS = {
 }
 
 def classify_bug(prod_name: str, brand: str, list_price: float, sell_price: float, discount_pct: float, savings: float, stock_qty: int):
-    """
-    Classifica se o produto é um 'PromoBug' e calcula score e tags.
-    """
     is_bug = False
     reasons = []
     score = 0
@@ -45,13 +50,11 @@ def classify_bug(prod_name: str, brand: str, list_price: float, sell_price: floa
     brand_lower = (brand or '').lower()
     is_premium = any(pb in brand_lower or pb in name_lower for pb in PREMIUM_BRANDS)
     
-    # 1. Erro de cadastro / Teste
     if 'teste' in name_lower:
         is_bug = True
         score += 90
         reasons.append('⚠️ Item de Teste em Produção')
         
-    # 2. Desconto extremo (90%+)
     if discount_pct >= 90:
         is_bug = True
         score += 85
@@ -64,7 +67,6 @@ def classify_bug(prod_name: str, brand: str, list_price: float, sell_price: floa
         score += 40
         reasons.append(f'🏷️ Super Promoção ({discount_pct:.1f}% OFF)')
         
-    # 3. Bug em Marca Premium / Perfumaria Importada / Fraldas Premium
     if is_premium and discount_pct >= 65:
         is_bug = True
         score += 50
@@ -72,13 +74,11 @@ def classify_bug(prod_name: str, brand: str, list_price: float, sell_price: floa
     elif is_premium and discount_pct >= 50:
         score += 25
         
-    # 4. Erro de centavos ou preço irrealmente baixo
     if sell_price > 0 and sell_price <= 4.00 and list_price >= 20.00:
         is_bug = True
         score += 70
         reasons.append(f'💸 Preço de Centavos (R$ {sell_price:.2f} de R$ {list_price:.2f})')
         
-    # 5. Queda extrema de preço absoluto (economia brutal)
     if savings >= 200.00 and discount_pct >= 70:
         is_bug = True
         score += 55
@@ -88,13 +88,11 @@ def classify_bug(prod_name: str, brand: str, list_price: float, sell_price: floa
         score += 40
         reasons.append(f'💰 Grande Economia (Economize R$ {savings:.2f})')
         
-    # 6. Despencou de valor alto para baixo
     if list_price >= 150.00 and sell_price <= 35.00:
         is_bug = True
         score += 60
         reasons.append(f'📉 Queda Abrupta de Patamar de Preço')
         
-    # Bonificação por estoque
     if is_bug and stock_qty > 0:
         score += 15
         if stock_qty >= 50:
@@ -192,26 +190,33 @@ def fetch_url(url: str):
         logger.warning(f"Request failed for {url}: {e}")
     return None
 
+def export_static_json(products_list: list, stats_data: dict):
+    """Gera o arquivo JSON estático para alimentação direta do GitHub Pages."""
+    try:
+        payload = {
+            'updated_at': datetime.now().isoformat(),
+            'stats': stats_data,
+            'products': products_list
+        }
+        for path in [JSON_OUTPUT_PATH, ROOT_JSON_OUTPUT_PATH]:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, ensure_ascii=False, indent=None)
+        logger.info(f"JSON estático gerado com sucesso em {JSON_OUTPUT_PATH} ({len(products_list)} itens)!")
+    except Exception as e:
+        logger.error(f"Erro ao exportar JSON estático: {e}")
+
 def run_full_scan():
-    """
-    Executa varredura profunda no catálogo da Pague Menos cobrindo:
-    1. O SITE INTEIRO por ordem de Maior Desconto (top ofertas globais)
-    2. O SITE INTEIRO por Preço Crescente (erros de centavos, R$ 0.01 a R$ 3.00)
-    3. Cada Departamento Principal (Dermo & Beleza, Medicamentos, Higiene, Bebês, Suplementos)
-    4. Subcategorias Chave de Perfumaria, Skincare, Cabelos, Protetor Solar
-    5. Intelligent Search Global
-    """
     init_db()
     t_start = time.time()
     urls_to_scan = []
     
-    # 1. SITE INTEIRO - Maiores Descontos Globais (sem restrição de categoria)
+    # 1. SITE INTEIRO - Maiores Descontos Globais
     for f in [0, 50, 100, 150, 200, 250]:
         urls_to_scan.append(
             f'https://www.paguemenos.com.br/api/catalog_system/pub/products/search?O=OrderByBestDiscountDESC&_from={f}&_to={f+49}'
         )
         
-    # 2. SITE INTEIRO - Menores Preços Globais (Caça Bugs de centavos)
+    # 2. SITE INTEIRO - Menores Preços Globais (Erros de centavos)
     for f in [0, 50, 100]:
         urls_to_scan.append(
             f'https://www.paguemenos.com.br/api/catalog_system/pub/products/search?O=OrderByPriceASC&_from={f}&_to={f+49}'
@@ -226,7 +231,7 @@ def run_full_scan():
             f'https://www.paguemenos.com.br/api/catalog_system/pub/products/search?fq=C:{dept_id}&O=OrderByBestDiscountDESC&_from=50&_to=99'
         )
 
-    # 4. Subcategorias Críticas de Dermo e Beleza (alta ocorrência de promoções de perfumes e dermocosméticos)
+    # 4. Subcategorias Críticas de Dermo e Beleza
     subcats = [
         'C:300/302/',  # Rosto
         'C:300/303/',  # Cabelos
@@ -241,7 +246,7 @@ def run_full_scan():
             f'https://www.paguemenos.com.br/api/catalog_system/pub/products/search?fq={sub}&O=OrderByBestDiscountDESC&_from=0&_to=49'
         )
 
-    # 5. Intelligent Search para pegar promoções relâmpago de todo o site
+    # 5. Intelligent Search
     for p in [1, 2, 3, 4]:
         urls_to_scan.append(
             f'https://www.paguemenos.com.br/_v/api/intelligent-search/product_search?sort=discount:desc&count=50&page={p}'
@@ -263,7 +268,6 @@ def run_full_scan():
 
     logger.info(f"Total bruto de produtos coletados do site: {len(raw_products)}")
     
-    # Process and upsert in bulk
     processed_ids = set()
     products_to_save = []
     total_promos = 0
@@ -287,6 +291,10 @@ def run_full_scan():
     total_saved = len(products_to_save)
     duration = round(time.time() - t_start, 2)
     log_scan(total_saved, total_promos, total_bugs, duration, "SUCCESS")
+    
+    stats = get_stats()
+    export_static_json(products_to_save, stats)
+    
     logger.info(f"Varredura global concluída em {duration}s! Total únicos: {total_saved} | Descontos >= 70%: {total_promos} | PromoBugs: {total_bugs}")
     
     return {

@@ -83,20 +83,20 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">RADAR GERAL</span>
+              PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">PROMORADAR</span>
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              Rolagem Infinita
+            <span id="mode-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              GitHub Pages
             </span>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
             <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
-              Auto-Scan 24/7 (10m)
+              Radar Ativo 24/7
             </span>
             <span>•</span>
-            <span id="last-update-text">Atualizado há instantes</span>
+            <span id="last-update-text">Atualizado recentemente</span>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@
 
         <button id="scan-btn" onclick="triggerScan()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-900/40 transition active:scale-95">
           <i id="scan-icon" class="fa-solid fa-arrows-rotate"></i>
-          <span id="scan-btn-text">Escanear Agora</span>
+          <span id="scan-btn-text">Atualizar</span>
         </button>
       </div>
 
@@ -258,7 +258,6 @@
       <!-- Quick Action Pills + BOTÃO IGNORAR MEDICAMENTOS -->
       <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs border-t border-slate-800/80 pt-3">
         
-        <!-- BOTÃO IGNORAR MEDICAMENTOS -->
         <button onclick="toggleExcludeMedicines()" id="btn-exclude-meds" class="px-4 py-1.5 rounded-full font-bold whitespace-nowrap border transition flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700">
           <i id="icon-exclude-meds" class="fa-solid fa-ban text-slate-400"></i>
           <span>Ignorar Medicamentos</span>
@@ -300,7 +299,7 @@
 
         <div>
           <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Ordenar por</label>
-          <select id="sort-select" onchange="resetAndFetch()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
+          <select id="sort-select" onchange="resetAndRender()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
             <option value="discount_desc">🔥 Maior Desconto (%)</option>
             <option value="savings_desc">💰 Maior Economia (R$)</option>
             <option value="price_asc">💸 Menor Preço (Centavos Primeiro)</option>
@@ -311,7 +310,7 @@
 
         <div>
           <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Preço Máximo (R$)</label>
-          <select id="max-price-select" onchange="resetAndFetch()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
+          <select id="max-price-select" onchange="resetAndRender()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
             <option value="">Qualquer Valor</option>
             <option value="10">Até R$ 10,00</option>
             <option value="25">Até R$ 25,00</option>
@@ -326,7 +325,7 @@
       <!-- Results Count Bar -->
       <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
         <div>
-          Encontrados: <span id="count-total" class="font-bold text-white">0</span> ofertas com <span id="count-discount" class="text-rose-400 font-bold">&ge; 70%</span>
+          Exibindo: <span id="count-visible" class="font-bold text-white">0</span> de <span id="count-total" class="font-bold text-white">0</span> ofertas (<span id="count-discount" class="text-rose-400 font-bold">&ge; 70%</span>)
           <span id="filter-meds-indicator" class="hidden ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
             🚫 Sem Medicamentos
           </span>
@@ -379,13 +378,15 @@
         <span>Monitorando Todo o Site Oficial da Pague Menos</span>
       </div>
       <div>
-        Auto-Radar 24/7 &bull; Rolagem Infinita &bull; FastAPI + SQLite
+        Auto-Radar 24/7 &bull; Rolagem Infinita &bull; GitHub Pages + GitHub Actions
       </div>
     </div>
   </footer>
 
   <script>
     // State
+    let allProducts = [];
+    let filteredProducts = [];
     let currentDepartment = 'todos';
     let currentFilter = 'all_70';
     let minDiscount = 70.0;
@@ -393,11 +394,8 @@
     let promoBugOnly = false;
     let excludeMedicines = false;
     let currentCategory = '';
-    let currentPage = 1;
-    let pageSize = 24;
-    let totalPages = 1;
-    let isLoading = false;
-    let hasMore = true;
+    let visibleCount = 0;
+    const batchSize = 24;
     let searchTimeout = null;
     let soundEnabled = true;
 
@@ -456,7 +454,65 @@
       }, 3000);
     }
 
-    // TOGGLE IGNORAR MEDICAMENTOS
+    // Carregamento de dados (Prioriza JSON estático do GitHub Pages, com fallback para API local)
+    async function loadData() {
+      const sources = [
+        'data/promos.json',
+        'promos.json',
+        '/data/promos.json',
+        '/api/promos?min_discount=0&limit=100'
+      ];
+
+      for (const src of sources) {
+        try {
+          const res = await fetch(src + '?t=' + Date.now());
+          if (res.ok) {
+            const data = await res.json();
+            if (data.products && Array.isArray(data.products)) {
+              allProducts = data.products;
+              if (data.stats) {
+                updateStats(data.stats);
+              }
+              if (data.updated_at) {
+                const date = new Date(data.updated_at);
+                document.getElementById('last-update-text').innerText = `Atualizado às ${date.toLocaleTimeString('pt-BR')}`;
+              }
+              console.log(`Carregado com sucesso de ${src} (${allProducts.length} itens)`);
+              resetAndRender();
+              return;
+            }
+          }
+        } catch (e) {
+          // Continua para o próximo fallback
+        }
+      }
+
+      // Se nada deu certo, tenta rota REST direta
+      try {
+        const statsRes = await fetch('/api/stats');
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          updateStats(stats);
+          document.getElementById('mode-badge').innerText = 'Local API';
+        }
+        const promosRes = await fetch(`/api/promos?min_discount=0&limit=100`);
+        if (promosRes.ok) {
+          const pData = await promosRes.json();
+          allProducts = pData.products || [];
+          resetAndRender();
+        }
+      } catch (err) {
+        console.error('Falha geral ao carregar dados:', err);
+      }
+    }
+
+    function updateStats(stats) {
+      document.getElementById('kpi-bugs').innerText = stats.bugs || 0;
+      document.getElementById('kpi-promos').innerText = stats.over_70 || 0;
+      document.getElementById('kpi-stock').innerText = stats.in_stock_70 || 0;
+      document.getElementById('kpi-savings').innerText = `R$ ${(stats.max_savings || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+    }
+
     function toggleExcludeMedicines() {
       excludeMedicines = !excludeMedicines;
       const btn = document.getElementById('btn-exclude-meds');
@@ -468,7 +524,7 @@
         btn.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/40');
         icon.className = 'fa-solid fa-ban text-white';
         indicator.classList.remove('hidden');
-        showToast('Medicamentos ocultados das promoções!', 'info');
+        showToast('Medicamentos ocultados das ofertas!', 'info');
       } else {
         btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
         btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/40');
@@ -477,7 +533,7 @@
         showToast('Medicamentos incluídos novamente', 'info');
       }
 
-      resetAndFetch();
+      resetAndRender();
     }
 
     function setDepartment(dept) {
@@ -505,7 +561,7 @@
         }
       }
 
-      resetAndFetch();
+      resetAndRender();
     }
 
     function setQuickFilter(type) {
@@ -538,7 +594,7 @@
 
       document.getElementById('min-discount').value = minDiscount;
       document.getElementById('min-discount-label').innerText = `${minDiscount}%`;
-      resetAndFetch();
+      resetAndRender();
     }
 
     function toggleInStockOnly() {
@@ -551,19 +607,19 @@
         btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
         btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
       }
-      resetAndFetch();
+      resetAndRender();
     }
 
     function onDiscountSliderChange(val) {
       minDiscount = parseFloat(val);
       document.getElementById('min-discount-label').innerText = `${minDiscount}%`;
-      resetAndFetch();
+      resetAndRender();
     }
 
     function debounceSearch() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        resetAndFetch();
+        resetAndRender();
       }, 350);
     }
 
@@ -582,163 +638,138 @@
       setQuickFilter('all_70');
     }
 
-    function resetAndFetch() {
-      currentPage = 1;
-      hasMore = true;
-      document.getElementById('products-grid').innerHTML = '';
-      document.getElementById('end-of-results').classList.add('hidden');
-      fetchPromos(false);
+    function triggerScan() {
+      showToast('Recarregando dados...', 'info');
+      loadData().then(() => {
+        showToast('Dados atualizados com sucesso!', 'success');
+        playAlertSound();
+      });
     }
 
-    async function fetchStats() {
-      try {
-        const res = await fetch('/api/stats');
-        const data = await res.json();
-        
-        document.getElementById('kpi-bugs').innerText = data.bugs || 0;
-        document.getElementById('kpi-promos').innerText = data.over_70 || 0;
-        document.getElementById('kpi-stock').innerText = data.in_stock_70 || 0;
-        document.getElementById('kpi-savings').innerText = `R$ ${(data.max_savings || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-
-        if (data.last_scan && data.last_scan.timestamp) {
-          const date = new Date(data.last_scan.timestamp);
-          document.getElementById('last-update-text').innerText = `Atualizado às ${date.toLocaleTimeString('pt-BR')}`;
-        }
-
-        const scanBtn = document.getElementById('scan-btn');
-        const scanIcon = document.getElementById('scan-icon');
-        const scanText = document.getElementById('scan-btn-text');
-
-        if (data.is_scanning) {
-          scanBtn.disabled = true;
-          scanBtn.classList.add('opacity-75', 'cursor-not-allowed');
-          scanIcon.classList.add('animate-spin');
-          scanText.innerText = 'Varrendo...';
-        } else {
-          scanBtn.disabled = false;
-          scanBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-          scanIcon.classList.remove('animate-spin');
-          scanText.innerText = 'Escanear Agora';
-        }
-      } catch (e) {
-        console.error('Erro ao buscar estatísticas:', e);
-      }
-    }
-
-    async function triggerScan() {
-      try {
-        const scanBtn = document.getElementById('scan-btn');
-        const scanIcon = document.getElementById('scan-icon');
-        const scanText = document.getElementById('scan-btn-text');
-        
-        scanBtn.disabled = true;
-        scanIcon.classList.add('animate-spin');
-        scanText.innerText = 'Varrendo...';
-        
-        const res = await fetch('/api/scan', { method: 'POST' });
-        const data = await res.json();
-        showToast(data.message || 'Varredura geral iniciada!', 'info');
-
-        let checkCount = 0;
-        const interval = setInterval(async () => {
-          checkCount++;
-          const statsRes = await fetch('/api/stats');
-          const statsData = await statsRes.json();
-          fetchStats();
-
-          if (!statsData.is_scanning || checkCount > 25) {
-            clearInterval(interval);
-            showToast('Varredura completa concluída!', 'success');
-            playAlertSound();
-            resetAndFetch();
-          }
-        }, 2000);
-
-      } catch (e) {
-        showToast('Erro ao iniciar varredura', 'warning');
-      }
-    }
-
-    // FETCH PRODUTOS (COM SUPORTE A ROLAGEM INFINITA)
-    async function fetchPromos(append = false) {
-      if (isLoading) return;
-      isLoading = true;
-
-      const grid = document.getElementById('products-grid');
-      const emptyState = document.getElementById('empty-state');
-      const spinner = document.getElementById('loading-spinner');
-      const endMessage = document.getElementById('end-of-results');
-
-      spinner.classList.remove('hidden');
-      spinner.classList.add('flex');
-
-      const search = document.getElementById('search-input').value.trim();
-      const maxPrice = document.getElementById('max-price-select').value;
+    // APLICAÇÃO DE FILTROS CLIENT-SIDE (ULTRARRÁPIDO)
+    function applyFilters() {
+      const search = document.getElementById('search-input').value.trim().toLowerCase();
+      const maxPrice = parseFloat(document.getElementById('max-price-select').value) || null;
       const sort = document.getElementById('sort-select').value;
 
-      let url = `/api/promos?min_discount=${minDiscount}&sort=${sort}&page=${currentPage}&limit=${pageSize}`;
-      if (inStockOnly) url += '&in_stock_only=true';
-      if (promoBugOnly) url += '&promobug_only=true';
-      if (excludeMedicines) url += '&exclude_medicines=true';
-      if (currentDepartment && currentDepartment !== 'todos') url += `&department=${encodeURIComponent(currentDepartment)}`;
-      if (currentCategory) url += `&category=${encodeURIComponent(currentCategory)}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (maxPrice) url += `&max_price=${maxPrice}`;
+      filteredProducts = allProducts.filter(p => {
+        // Desconto
+        if (p.discount_pct < minDiscount) return false;
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
+        // Estoque
+        if (inStockOnly && !p.available) return false;
 
-        totalPages = data.total_pages || 1;
-        document.getElementById('count-total').innerText = data.total;
-        document.getElementById('count-discount').innerText = `≥ ${minDiscount}%`;
+        // PromoBug
+        if (promoBugOnly && !p.is_bug) return false;
 
-        if (!data.products || data.products.length === 0) {
-          if (!append) {
-            grid.innerHTML = '';
-            emptyState.classList.remove('hidden');
+        // Preço Máximo
+        if (maxPrice !== null && p.sell_price > maxPrice) return false;
+
+        // Ignorar Medicamentos
+        if (excludeMedicines) {
+          const dept = (p.department || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          const allCats = (JSON.stringify(p.all_categories || [])).toLowerCase();
+          if (dept.includes('medicamento') || cat.includes('medicamento') || allCats.includes('medicamento')) {
+            return false;
           }
-          hasMore = false;
-          spinner.classList.add('hidden');
-          spinner.classList.remove('flex');
-          isLoading = false;
-          return;
         }
 
-        emptyState.classList.add('hidden');
-
-        if (currentPage === 1 && data.products.length > 0) {
-          const topBug = data.products.find(p => p.is_bug) || data.products[0];
-          renderSpotlight(topBug);
+        // Departamento
+        if (currentDepartment !== 'todos') {
+          const dept = (p.department || '').toLowerCase();
+          const target = currentDepartment.toLowerCase();
+          if (!dept.includes(target)) return false;
         }
 
-        const cardsHtml = data.products.map(p => renderCard(p)).join('');
-        if (append) {
-          grid.insertAdjacentHTML('beforeend', cardsHtml);
-        } else {
-          grid.innerHTML = cardsHtml;
+        // Categoria específica
+        if (currentCategory) {
+          const cat = (p.category || '').toLowerCase();
+          const allCats = (JSON.stringify(p.all_categories || [])).toLowerCase();
+          const target = currentCategory.toLowerCase();
+          if (!cat.includes(target) && !allCats.includes(target)) return false;
         }
 
-        if (currentPage >= totalPages) {
-          hasMore = false;
-          endMessage.classList.remove('hidden');
-        } else {
-          hasMore = true;
-          endMessage.classList.add('hidden');
+        // Busca por texto
+        if (search) {
+          const name = (p.name || '').toLowerCase();
+          const brand = (p.brand || '').toLowerCase();
+          if (!name.includes(search) && !brand.includes(search)) return false;
         }
 
-      } catch (e) {
-        console.error('Erro ao carregar promoções:', e);
-      } finally {
-        spinner.classList.add('hidden');
-        spinner.classList.remove('flex');
-        isLoading = false;
+        return true;
+      });
+
+      // Ordenação
+      filteredProducts.sort((a, b) => {
+        if (sort === 'discount_desc') {
+          return b.discount_pct - a.discount_pct || b.savings - a.savings;
+        } else if (sort === 'savings_desc') {
+          return b.savings - a.savings || b.discount_pct - a.discount_pct;
+        } else if (sort === 'price_asc') {
+          return a.sell_price - b.sell_price;
+        } else if (sort === 'bug_score_desc') {
+          return (b.bug_score || 0) - (a.bug_score || 0) || b.discount_pct - a.discount_pct;
+        } else if (sort === 'recent') {
+          return (b.id || '').localeCompare(a.id || '');
+        }
+        return b.discount_pct - a.discount_pct;
+      });
+    }
+
+    function resetAndRender() {
+      applyFilters();
+      visibleCount = 0;
+      document.getElementById('products-grid').innerHTML = '';
+      
+      document.getElementById('count-total').innerText = filteredProducts.length;
+      document.getElementById('count-discount').innerText = `≥ ${minDiscount}%`;
+
+      const emptyState = document.getElementById('empty-state');
+      const endMessage = document.getElementById('end-of-results');
+
+      if (filteredProducts.length === 0) {
+        emptyState.classList.remove('hidden');
+        endMessage.classList.add('hidden');
+        document.getElementById('count-visible').innerText = 0;
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Spotlight na melhor oferta
+      const topBug = filteredProducts.find(p => p.is_bug) || filteredProducts[0];
+      renderSpotlight(topBug);
+
+      // Renderiza primeiro lote
+      appendMoreCards();
+    }
+
+    function appendMoreCards() {
+      const grid = document.getElementById('products-grid');
+      const endMessage = document.getElementById('end-of-results');
+
+      const nextBatch = filteredProducts.slice(visibleCount, visibleCount + batchSize);
+      if (nextBatch.length === 0) {
+        endMessage.classList.remove('hidden');
+        return;
+      }
+
+      visibleCount += nextBatch.length;
+      document.getElementById('count-visible').innerText = visibleCount;
+
+      const html = nextBatch.map(p => renderCard(p)).join('');
+      grid.insertAdjacentHTML('beforeend', html);
+
+      if (visibleCount >= filteredProducts.length) {
+        endMessage.classList.remove('hidden');
+      } else {
+        endMessage.classList.add('hidden');
       }
     }
 
-    // LISTENER DE ROLAGEM INFINITA
+    // ROLAGEM INFINITA
     window.addEventListener('scroll', () => {
-      // Back to top visibility
       const backBtn = document.getElementById('back-to-top');
       if (window.scrollY > 400) {
         backBtn.classList.remove('opacity-0', 'pointer-events-none');
@@ -748,11 +779,9 @@
         backBtn.classList.remove('opacity-100');
       }
 
-      // Infinite scroll trigger when reaching 700px before page end
       if ((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 700)) {
-        if (!isLoading && hasMore && currentPage < totalPages) {
-          currentPage++;
-          fetchPromos(true);
+        if (visibleCount < filteredProducts.length) {
+          appendMoreCards();
         }
       }
     });
@@ -877,19 +906,23 @@
     }
 
     function downloadCSV() {
-      let url = `/api/export/csv?min_discount=${minDiscount}`;
-      if (excludeMedicines) url += '&exclude_medicines=true';
-      if (currentDepartment && currentDepartment !== 'todos') url += `&department=${encodeURIComponent(currentDepartment)}`;
-      if (inStockOnly) url += '&in_stock_only=true';
-      if (promoBugOnly) url += '&promobug_only=true';
-      window.open(url, '_blank');
-      showToast('Download do arquivo CSV iniciado!', 'info');
+      let csv = "\ufeffProduto;Marca;Departamento;Categoria;Preço De (R$);Preço Por (R$);Desconto (%);Economia (R$);Disponível;Estoque;PromoBug;Link\n";
+      filteredProducts.forEach(p => {
+        csv += `"${p.name}";"${p.brand}";"${p.department}";"${p.category}";"${p.list_price.toFixed(2)}";"${p.sell_price.toFixed(2)}";"${p.discount_pct.toFixed(1)}%";"${p.savings.toFixed(2)}";"${p.available ? 'SIM' : 'NÃO'}";"${p.stock_quantity}";"${p.is_bug ? 'SIM' : 'NÃO'}";"${p.link}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `paguemenos_promos_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Download do CSV concluído!', 'info');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      fetchStats();
-      fetchPromos();
-      setInterval(fetchStats, 20000);
+      loadData();
+      setInterval(loadData, 120000); // Recarrega arquivo a cada 2 minutos caso tenha atualização
     });
   </script>
 </body>
