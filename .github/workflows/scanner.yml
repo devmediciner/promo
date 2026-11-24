@@ -1,7 +1,10 @@
-name: Pague Menos Radar Monitor & Auto-Deploy
+name: PromoRadar Monitor & Auto-Deploy
 
 on:
-  workflow_dispatch: # Permite disparar manualmente sob demanda pelo botão "Run workflow" no GitHub
+  schedule:
+    # Executa a cada 10 minutos automaticamente
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Permite disparar manualmente pelo botão "Run workflow" no GitHub
   push:
     branches:
       - main
@@ -20,6 +23,8 @@ jobs:
     steps:
       - name: Baixar código do repositório
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Python 3.11
         uses: actions/setup-python@v5
@@ -30,13 +35,18 @@ jobs:
       - name: Instalar Dependências
         run: pip install -r requirements.txt
 
-      - name: Executar Varredura Geral de Ofertas e Bugs
+      - name: Executar Varredura Multi-Lojas e Notificações Inteligentes
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python scanner.py
 
-      - name: Commit e Push dos Dados Atualizados
+      - name: Commit e Push dos Dados e Deduplicação
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/promos.json promos.json promos.db
-          git diff --staged --quiet || git commit -m "Auto-update: Catálogo e PromoBugs atualizados [skip ci]"
-          git push
+          git add data/promos.json promos.json promos.db data/notified_products.json config.json
+          git diff --staged --quiet || git commit -m "Auto-update: Varredura 10m e deduplicação de alertas [skip ci]"
+          git pull --rebase origin main || true
+          git push origin main

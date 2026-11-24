@@ -591,23 +591,28 @@
       const name = (p.name || '').toLowerCase();
 
       // 1. Departamentos e categorias farmacêuticas
-      if (dept.includes('medicamento') || cat.includes('medicamento') || allCats.includes('medicamento')) {
+      if (dept.includes('medicamento') || cat.includes('medicamento') || allCats.includes('medicamento') ||
+          dept.includes('remédio') || dept.includes('remedio') || cat.includes('remédio') || cat.includes('remedio')) {
         return true;
       }
       if (dept.includes('saúde') || dept.includes('saude')) {
         // Se estiver em saúde e não for suplemento/vitamina
-        if (!cat.includes('suplemento') && !name.includes('suplemento') && !name.includes('vitamina') && !name.includes('proteína') && !name.includes('whey')) {
+        const supplementTerms = ['vitamina', 'suplemento', 'colágeno', 'colageno', 'creatina', 'whey', 'ômega', 'omega', 'melatonina', 'proteína', 'proteina'];
+        if (!supplementTerms.some(k => name.includes(k) || cat.includes(k))) {
           return true;
         }
       }
 
       // 2. Termos farmacêuticos explícitos no título
       const pharmaKeywords = [
-        'comprimido', 'comprimidos', 'cápsula dura', 'capsula dura',
+        'comprimido', 'comprimidos', 'cápsula', 'capsula', 'drágea', 'dragea',
         'genérico', 'generico', 'gotas ', 'xarope', 'posologia', 'tarja',
-        'solução oral', 'solucao oral', 'suspensão oral', 'injetável', 'injetavel',
+        'solução oral', 'solucao oral', 'suspensão oral', 'suspensao oral', 'injetável', 'injetavel',
         'anastrozol', 'imatinibe', 'letrozol', 'escitalopram', 'anlodipino', 'fluoxetina',
-        'quetiapina', 'desvenlafaxina', 'risperidona', 'losartana', 'atenolol', 'metformina'
+        'quetiapina', 'desvenlafaxina', 'risperidona', 'losartana', 'atenolol', 'metformina',
+        'dipirona', 'paracetamol', 'ibuprofeno', 'amoxicilina', 'azitromicina', 'omeprazol',
+        'pantoprazol', 'sildenafila', 'tadalafila', 'clonazepam', 'diazepam', 'pregabalina',
+        'dexametasona', 'prednisona', 'nimesulida', 'toragesic', 'neosaldina', 'dorflex'
       ];
 
       if (pharmaKeywords.some(k => name.includes(k))) {
@@ -824,7 +829,7 @@
       const stockBtn = document.getElementById('pill-stock');
       stockBtn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
       stockBtn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
-      if (excludeMedicines) {
+      if (!excludeMedicines) {
         toggleExcludeMedicines();
       }
       setDepartment('todos');
