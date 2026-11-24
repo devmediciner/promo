@@ -71,37 +71,80 @@
     <i class="fa-solid fa-arrow-up text-sm"></i>
   </button>
 
-  <!-- MODAL NOTIFICAÇÕES CELULAR (NTFY.SH) -->
+  <!-- MODAL NOTIFICAÇÕES CELULAR (TELEGRAM & NTFY) -->
   <div id="modal-notifications" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700 shadow-2xl relative space-y-4">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-slate-700 shadow-2xl relative space-y-4">
       <button onclick="closeNotificationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl">
-          <i class="fa-solid fa-mobile-screen-button"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-sky-950">
+          <i class="fa-brands fa-telegram"></i>
         </div>
         <div>
-          <h3 class="text-base font-bold text-white">Alertas Push no Celular</h3>
-          <p class="text-xs text-slate-400">Gratuito via ntfy (Android e iOS, sem cadastro)</p>
+          <h3 class="text-base font-bold text-white">Alertas de PromoBugs no Celular</h3>
+          <p class="text-xs text-slate-400">Receba foto, preço De/Por, economia e link direto</p>
         </div>
       </div>
 
-      <div class="space-y-3 text-xs text-slate-300">
-        <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
-          <p class="font-bold text-emerald-400 flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-check"></i> Como receber em 3 passos rápidos:
+      <!-- TABS TELEGRAM vs NTFY -->
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold">
+        <button id="tab-btn-tg" onclick="switchNotifTab('telegram')" class="px-3.5 py-1.5 rounded-lg bg-sky-600 text-white flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-telegram"></i> Telegram (Com Fotos)
+        </button>
+        <button id="tab-btn-ntfy" onclick="switchNotifTab('ntfy')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-bell"></i> ntfy.sh (Sem Conta)
+        </button>
+      </div>
+
+      <!-- ABA TELEGRAM -->
+      <div id="tab-content-tg" class="space-y-3 text-xs text-slate-300">
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
+          <p class="font-bold text-sky-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> Como conectar seu Telegram em 1 minuto:
           </p>
-          <ol class="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed">
-            <li>Instale o app gratuito <strong class="text-white">ntfy</strong> na Play Store (Android) ou App Store (iPhone).</li>
-            <li>No app, clique em <strong class="text-white">+</strong> e digite o seu tópico abaixo.</li>
-            <li>Pronto! Quando entrar um PromoBug real, seu celular apita na hora!</li>
+          <ol class="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed text-[11px]">
+            <li>No Telegram, pesquise por <strong class="text-white">@BotFather</strong> e envie <code class="text-sky-300">/newbot</code>. Escolha um nome e copie o <strong>HTTP API Token</strong>.</li>
+            <li>Abra o seu bot recém-criado e toque em <strong>Começar (Start)</strong>.</li>
+            <li>Para pegar seu ID numérico, abra o bot <strong class="text-white">@userinfobot</strong> e copie seu <strong>Id</strong>.</li>
           </ol>
         </div>
 
+        <div class="space-y-2">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Telegram Bot Token:</label>
+            <input id="tg-token-input" type="text" placeholder="ex: 789123456:AAFlkdf8s97dflk..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Seu Chat ID (ou ID do seu canal):</label>
+            <input id="tg-chat-input" type="text" placeholder="ex: 123456789" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-2 pt-2">
+          <button onclick="sendTestTelegram()" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-paper-plane text-sky-400"></i> Enviar Foto de Teste
+          </button>
+          <button onclick="saveTelegramSettings()" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-950 transition">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Telegram
+          </button>
+        </div>
+      </div>
+
+      <!-- ABA NTFY -->
+      <div id="tab-content-ntfy" class="space-y-3 text-xs text-slate-300 hidden">
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
+          <p class="font-bold text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> Notificações sem cadastro (ntfy):
+          </p>
+          <p class="text-slate-400 text-[11px]">
+            Instale o app gratuito <strong>ntfy</strong> no seu celular, toque em <strong>+</strong> e inscreva-se no tópico abaixo.
+          </p>
+        </div>
+
         <div>
-          <label class="block font-bold text-slate-300 mb-1">Seu Tópico Privado de Alertas:</label>
+          <label class="block font-bold text-slate-300 mb-1">Seu Tópico Privado no ntfy:</label>
           <div class="flex items-center gap-2">
             <span class="text-slate-500 font-mono text-[11px]">ntfy.sh/</span>
             <input id="ntfy-topic-input" type="text" value="promobug_devmediciner" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-rose-500">
@@ -119,10 +162,11 @@
 
         <div class="text-center pt-1">
           <a id="ntfy-web-link" href="https://ntfy.sh/promobug_devmediciner" target="_blank" rel="noopener noreferrer" class="text-[11px] text-indigo-400 hover:underline inline-flex items-center gap-1">
-            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Abrir feed no navegador (ntfy.sh)
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Abrir no navegador (ntfy.sh)
           </a>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -735,15 +779,125 @@
       setQuickFilter('all_70');
     }
 
-    function openNotificationModal() {
+    function switchNotifTab(tab) {
+      const btnTg = document.getElementById('tab-btn-tg');
+      const btnNtfy = document.getElementById('tab-btn-ntfy');
+      const contentTg = document.getElementById('tab-content-tg');
+      const contentNtfy = document.getElementById('tab-content-ntfy');
+
+      if (tab === 'telegram') {
+        btnTg.className = 'px-3.5 py-1.5 rounded-lg bg-sky-600 text-white flex items-center gap-1.5 transition';
+        btnNtfy.className = 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 transition';
+        contentTg.classList.remove('hidden');
+        contentNtfy.classList.add('hidden');
+      } else {
+        btnNtfy.className = 'px-3.5 py-1.5 rounded-lg bg-rose-600 text-white flex items-center gap-1.5 transition';
+        btnTg.className = 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1.5 transition';
+        contentNtfy.classList.remove('hidden');
+        contentTg.classList.add('hidden');
+      }
+    }
+
+    async function openNotificationModal() {
       const savedTopic = localStorage.getItem('ntfy_topic') || 'promobug_devmediciner';
+      const savedTgToken = localStorage.getItem('telegram_bot_token') || '';
+      const savedTgChat = localStorage.getItem('telegram_chat_id') || '';
+
       document.getElementById('ntfy-topic-input').value = savedTopic;
       document.getElementById('ntfy-web-link').href = `https://ntfy.sh/${savedTopic}`;
+      document.getElementById('tg-token-input').value = savedTgToken;
+      document.getElementById('tg-chat-input').value = savedTgChat;
+
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg.telegram_bot_token) document.getElementById('tg-token-input').value = cfg.telegram_bot_token;
+          if (cfg.telegram_chat_id) document.getElementById('tg-chat-input').value = cfg.telegram_chat_id;
+          if (cfg.ntfy_topic) document.getElementById('ntfy-topic-input').value = cfg.ntfy_topic;
+        }
+      } catch (e) {}
+
       document.getElementById('modal-notifications').classList.remove('hidden');
     }
 
     function closeNotificationModal() {
       document.getElementById('modal-notifications').classList.add('hidden');
+    }
+
+    async function sendTestTelegram() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chat-input').value.trim();
+      if (!token || !chat_id) {
+        showToast('Preencha o Token do Bot e o Chat ID primeiro!', 'warning');
+        return;
+      }
+      showToast('Enviando foto de teste para o Telegram...', 'info');
+      try {
+        const res = await fetch('/api/test-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token, chat_id: chat_id })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message, 'success');
+            playAlertSound();
+            return;
+          } else {
+            showToast(data.message, 'warning');
+            return;
+          }
+        }
+      } catch (e) {}
+      
+      try {
+        const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+        const testImg = 'https://paguemenos.vteximg.com.br/arquivos/ids/696662/7896902209046.jpg';
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            photo: testImg,
+            caption: '🎉 <b>PromoBug Radar conectado ao seu Telegram!</b>\n\nVocê receberá os melhores bugs de preço com foto e link direto aqui!',
+            parse_mode: 'HTML'
+          })
+        });
+        if (r.ok) {
+          showToast('Foto de teste enviada para o Telegram!', 'success');
+          playAlertSound();
+        } else {
+          const errData = await r.json();
+          showToast(`Erro Telegram: ${errData.description || 'Token ou ID inválido'}`, 'warning');
+        }
+      } catch (err) {
+        showToast('Erro ao conectar ao Telegram. Verifique seus dados.', 'warning');
+      }
+    }
+
+    async function saveTelegramSettings() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chat-input').value.trim();
+      if (!token || !chat_id) {
+        showToast('Preencha o Token do Bot e o Chat ID!', 'warning');
+        return;
+      }
+      localStorage.setItem('telegram_bot_token', token);
+      localStorage.setItem('telegram_chat_id', chat_id);
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegram_bot_token: token,
+            telegram_chat_id: chat_id
+          })
+        });
+      } catch (e) {}
+      showToast('Configurações do Telegram salvas!', 'success');
+      closeNotificationModal();
     }
 
     async function sendTestNotification() {
@@ -1086,10 +1240,6 @@
             </div>
 
           </div>
-
-        </div>
-      `;
-    }
 
         </div>
       `;

@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from database import get_connection, get_stats, init_db
 from scanner import run_full_scan
-from notifier import load_config, save_config, send_test_notification
+from notifier import load_config, save_config, send_test_notification, send_test_telegram
 
 app = FastAPI(title="Pague Menos PromoBug Radar", version="2.3.0")
 
@@ -108,6 +108,17 @@ async def test_notification_endpoint(request: Request):
         topic = ""
     res = send_test_notification(topic)
     return res
+
+@app.post("/api/test-telegram")
+async def test_telegram_endpoint(request: Request):
+    try:
+        data = await request.json()
+        token = data.get("token", "")
+        chat_id = data.get("chat_id", "")
+    except Exception:
+        token = ""
+        chat_id = ""
+    return send_test_telegram(token, chat_id)
 
 @app.get("/api/promos")
 def get_promos(

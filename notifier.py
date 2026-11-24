@@ -1,5 +1,6 @@
 import os
 import json
+import html
 import requests
 import logging
 
@@ -13,7 +14,7 @@ DEFAULT_CONFIG = {
     "telegram_bot_token": "",
     "telegram_chat_id": "",
     "discord_webhook": "",
-    "min_bug_score": 75,
+    "min_bug_score": 70,
     "ignore_medicines": True
 }
 
@@ -73,8 +74,7 @@ def is_medicine_item(product: dict) -> bool:
 
 def send_promo_alert(product: dict, market_info: str = ""):
     """
-    Envia notificação push para o celular via ntfy.sh (sem cadastro),
-    Telegram Bot ou Discord.
+    Envia notificação push com FOTO, LINK e PREÇO para Telegram, ntfy e Discord.
     """
     cfg = load_config()
     ntfy_topic = cfg.get("ntfy_topic", "").strip()
@@ -89,96 +89,146 @@ def send_promo_alert(product: dict, market_info: str = ""):
     savings = product.get('savings', 0.0)
     link = product.get('link', '')
     brand = product.get('brand', 'Pague Menos')
+    dept = product.get('department', 'Geral')
     stock = product.get('stock_quantity', 0)
+    image_url = product.get('image', '').strip()
     
-    msg_lines = [
-        f"🏷️ {product.get('name')} ({brand})",
-        f"💸 De: R$ {list_price:.2f} ➔ Por: R$ {sell_price:.2f} (-{disc:.1f}% OFF)",
-        f"💰 Economia: R$ {savings:.2f}",
-        f"📦 Estoque: {stock} unidades disponíveis",
-    ]
-    if market_info:
-        msg_lines.append(f"🛡️ Preço de Mercado: {market_info}")
-    msg_lines.append(f"\n🛒 Link: {link}")
-    
-    full_message = "\n".join(msg_lines)
-    
-    # 1. Envio via ntfy.sh (Push direto no Android / iPhone)
+    # 1. TELEGRAM BOT COM FOTO, PREÇOS E BOTÃO DE COMPRA
+    if tg_token and tg_chat:
+        try:
+            p_name_esc = html.escape(product.get('name', 'Produto'))
+            brand_esc = html.escape(brand)
+            dept_esc = html.escape(dept)
+            
+            caption_lines = [
+                "🚨 <b>PROMOBUG DETECTADO NA PAGUE MENOS!</b> 🚨",
+                f"🏷️ <b>{p_name_esc}</b>",
+                f"🏢 <i>{brand_esc} • {dept_esc}</i>\n",
+                f"💸 De: <s>R$ {list_price:.2f}</s>",
+                f"🔥 <b>Por: R$ {sell_price:.2f} (-{disc:.1f}% OFF)</b>",
+                f"💰 Economia de: <b>R$ {savings:.2f}</b>",
+                f"📦 Estoque: <b>{stock} unidades disponíveis</b>"
+            ]
+            if market_info:
+                caption_lines.append(f"\n🛡️ <b>Preço no Concorrente:</b> {html.escape(market_info)}")
+                
+            caption = "\n".join(caption_lines)
+            
+            # Botões inline no Telegram
+            inline_keyboard = [
+                [{"text": "🛒 Pegar Oferta na Pague Menos", "url": link}]
+            ]
+            comp_urls = product.get('comparison_urls') or {}
+            if comp_urls.get('google_shopping'):
+                inline_keyboard.append([
+                    {"text": "🔍 Comparar no Google Shopping", "url": comp_urls['google_shopping']}
+                ])
+                
+            reply_markup = {"inline_keyboard": inline_keyboard}
+
+            # Tenta enviar com FOTO
+            sent_photo = False
+            if image_url and image_url.startswith("http"):
+                try:
+                    photo_endpoint = f"https://api.telegram.org/bot{tg_token}/sendPhoto"
+                    r = requests.post(
+                        photo_endpoint,
+                        json={
+                            "chat_id": tg_chat,
+                            "photo": image_url,
+                            "caption": caption,
+                            "parse_mode": "HTML",
+                            "reply_markup": reply_markup
+                        },
+                        timeout=8
+                    )
+                    if r.status_code == 200:
+                        sent_photo = True
+                        logger.info("PromoBug com foto enviado para o Telegram com sucesso!")
+                except Exception as ex:
+                    logger.debug(f"Falha ao enviar foto no Telegram, usando texto: {ex}")
+                    
+            if not sent_photo:
+                # Fallback para mensagem de texto formatada
+                text_endpoint = f"https://api.telegram.org/bot{tg_token}/sendMessage"
+                requests.post(
+                    text_endpoint,
+                    json={
+                        "chat_id": tg_chat,
+                        "text": caption,
+                        "parse_mode": "HTML",
+                        "reply_markup": reply_markup,
+                        "disable_web_page_preview": False
+                    },
+                    timeout=8
+                )
+                logger.info("PromoBug em texto enviado para o Telegram!")
+        except Exception as e:
+            logger.warning(f"Erro ao enviar para Telegram: {e}")
+
+    # 2. NTFY.SH (Push para o celular)
     if ntfy_topic:
         try:
-            r = requests.post(
+            msg_lines = [
+                f"🏷️ {product.get('name')} ({brand})",
+                f"💸 De: R$ {list_price:.2f} ➔ Por: R$ {sell_price:.2f} (-{disc:.1f}% OFF)",
+                f"💰 Economia: R$ {savings:.2f}",
+                f"📦 Estoque: {stock} unidades",
+            ]
+            if market_info:
+                msg_lines.append(f"🛡️ Preço de Mercado: {market_info}")
+            msg_lines.append(f"\n🛒 Link: {link}")
+            
+            headers = {
+                "Title": title.encode('utf-8'),
+                "Priority": "urgent",
+                "Tags": "rotating_light,fire,dollar",
+                "Click": link
+            }
+            if image_url and image_url.startswith("http"):
+                headers["Attach"] = image_url
+                
+            requests.post(
                 f"https://ntfy.sh/{ntfy_topic}",
-                data=full_message.encode('utf-8'),
-                headers={
-                    "Title": title.encode('utf-8'),
-                    "Priority": "urgent",
-                    "Tags": "rotating_light,fire,dollar",
-                    "Click": link
-                },
+                data="\n".join(msg_lines).encode('utf-8'),
+                headers=headers,
                 timeout=6
             )
-            if r.status_code == 200:
-                logger.info(f"Notificação push enviada para ntfy.sh/{ntfy_topic}!")
         except Exception as e:
             logger.warning(f"Falha ao enviar via ntfy: {e}")
 
-    # 2. Envio via Telegram Bot
-    if tg_token and tg_chat:
-        try:
-            tg_url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
-            tg_text = f"🚨 *PROMOBUG PAGUE MENOS* 🚨\n\n" \
-                      f"*{product.get('name')}*\n" \
-                      f"💸 De: ~R$ {list_price:.2f}~ por *R$ {sell_price:.2f}* (*-{disc:.1f}% OFF*)\n" \
-                      f"💰 *Economia:* R$ {savings:.2f}\n" \
-                      f"📦 *Estoque:* {stock} un\n"
-            if market_info:
-                tg_text += f"🛡️ *Mercado:* {market_info}\n"
-            tg_text += f"\n👉 [PEGAR OFERTA AGORA]({link})"
-            
-            requests.post(
-                tg_url,
-                json={
-                    "chat_id": tg_chat,
-                    "text": tg_text,
-                    "parse_mode": "Markdown",
-                    "disable_web_page_preview": False
-                },
-                timeout=6
-            )
-            logger.info("Notificação enviada com sucesso via Telegram!")
-        except Exception as e:
-            logger.warning(f"Falha ao enviar via Telegram: {e}")
-
-    # 3. Envio via Discord
+    # 3. DISCORD WEBHOOK
     if discord_webhook:
         try:
+            embed = {
+                "title": product.get('name'),
+                "url": link,
+                "color": 15548997,
+                "fields": [
+                    {"name": "Preço Original", "value": f"~~R$ {list_price:.2f}~~", "inline": True},
+                    {"name": "Preço Bug", "value": f"**R$ {sell_price:.2f}**", "inline": True},
+                    {"name": "Desconto", "value": f"**-{disc:.1f}% OFF**", "inline": True},
+                    {"name": "Economia", "value": f"R$ {savings:.2f}", "inline": True},
+                    {"name": "Estoque", "value": f"{stock} un.", "inline": True}
+                ]
+            }
+            if image_url:
+                embed["thumbnail"] = {"url": image_url}
+            if market_info:
+                embed["fields"].append({"name": "Preço de Mercado", "value": market_info, "inline": False})
+                
             requests.post(
                 discord_webhook,
-                json={
-                    "content": f"🚨 **PROMOBUG DETECTADO NA PAGUE MENOS!**",
-                    "embeds": [{
-                        "title": product.get('name'),
-                        "url": link,
-                        "color": 15548997,
-                        "fields": [
-                            {"name": "Preço Original", "value": f"~~R$ {list_price:.2f}~~", "inline": True},
-                            {"name": "Preço Bug", "value": f"**R$ {sell_price:.2f}**", "inline": True},
-                            {"name": "Desconto", "value": f"**-{disc:.1f}% OFF**", "inline": True},
-                            {"name": "Economia", "value": f"R$ {savings:.2f}", "inline": True},
-                            {"name": "Estoque", "value": f"{stock} un.", "inline": True}
-                        ]
-                    }]
-                },
+                json={"content": "🚨 **PROMOBUG REAL DETECTADO NA PAGUE MENOS!**", "embeds": [embed]},
                 timeout=6
             )
         except Exception as e:
             logger.warning(f"Falha ao enviar via Discord: {e}")
 
 def send_test_notification(topic: str = "") -> dict:
-    """Envia um alerta de teste para o celular do usuário."""
+    """Envia um alerta de teste via ntfy.sh."""
     cfg = load_config()
     target_topic = topic or cfg.get("ntfy_topic", "promobug_devmediciner")
-    
     test_msg = "🔥 Alerta de Teste do PromoBug Radar!\n\nSeu celular está conectado e pronto para receber os melhores bugs de preço da Pague Menos em tempo real!"
     try:
         r = requests.post(
@@ -192,18 +242,57 @@ def send_test_notification(topic: str = "") -> dict:
             timeout=5
         )
         if r.status_code == 200:
-            return {"success": True, "message": f"Alerta de teste enviado para ntfy.sh/{target_topic}!"}
+            return {"success": True, "message": f"Alerta enviado para ntfy.sh/{target_topic}!"}
         return {"success": False, "message": f"ntfy retornou status {r.status_code}"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+def send_test_telegram(token: str = "", chat_id: str = "") -> dict:
+    """Envia mensagem e foto de teste para o Telegram do usuário."""
+    cfg = load_config()
+    t_token = token or cfg.get("telegram_bot_token", "").strip()
+    t_chat = chat_id or cfg.get("telegram_chat_id", "").strip()
+    
+    if not t_token or not t_chat:
+        return {"success": False, "message": "Preencha o Token do Bot e o Chat ID do Telegram!"}
+        
+    caption = (
+        "🎉 <b>PromoBug Radar conectado com sucesso ao seu Telegram!</b>\n\n"
+        "Quando um PromoBug for detectado, você receberá a foto, o preço De/Por, o desconto e o link direto para comprar antes de acabar o estoque!"
+    )
+    test_image = "https://paguemenos.vteximg.com.br/arquivos/ids/696662/7896902209046.jpg"
+    
+    try:
+        photo_url = f"https://api.telegram.org/bot{t_token}/sendPhoto"
+        r = requests.post(
+            photo_url,
+            json={
+                "chat_id": t_chat,
+                "photo": test_image,
+                "caption": caption,
+                "parse_mode": "HTML",
+                "reply_markup": {
+                    "inline_keyboard": [
+                        [{"text": "🌐 Abrir Painel PromoRadar", "url": "https://github.com/devmediciner/promo"}]
+                    ]
+                }
+            },
+            timeout=8
+        )
+        if r.status_code == 200:
+            return {"success": True, "message": "Mensagem e foto de teste enviadas para o Telegram!"}
+        else:
+            data = r.json()
+            return {"success": False, "message": f"Erro do Telegram: {data.get('description', 'Token ou Chat ID inválido')}"}
     except Exception as e:
         return {"success": False, "message": str(e)}
 
 def dispatch_bug_notifications(products: list, max_alerts: int = 3):
     """Varre a lista de produtos minerados e notifica os melhores PromoBugs."""
     cfg = load_config()
-    min_score = cfg.get("min_bug_score", 75)
+    min_score = cfg.get("min_bug_score", 70)
     ignore_meds = cfg.get("ignore_medicines", True)
     
-    # Filtra apenas itens com estoque, com bug score alto
     valid_bugs = []
     for p in products:
         if not p.get('is_bug') or not p.get('available'):
@@ -214,7 +303,6 @@ def dispatch_bug_notifications(products: list, max_alerts: int = 3):
             continue
         valid_bugs.append(p)
         
-    # Ordena pelo maior bug_score e maior desconto
     valid_bugs.sort(key=lambda x: (x.get('bug_score', 0), x.get('discount_pct', 0)), reverse=True)
     
     logger.info(f"Disparando notificações para até {min(max_alerts, len(valid_bugs))} bugs de destaque...")

@@ -1,0 +1,8 @@
+{
+  "ntfy_topic": "promobug_devmediciner",
+  "telegram_bot_token": "",
+  "telegram_chat_id": "",
+  "discord_webhook": "",
+  "min_bug_score": 70,
+  "ignore_medicines": true
+}
