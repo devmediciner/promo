@@ -53,22 +53,40 @@
     "link": "https://www.paguemenos.com.br/frasco-minoxid-turbinado-169x834o22778o56/p",
     "notified_at": "2026-11-23T23:43:41.296623"
   },
-  "pague menos_183909": {
-    "id": "183909",
-    "name": "Melatonina Sublingual Sabor Maracujá 300 Comprimidos - Health Labs",
-    "store": "Pague Menos",
-    "price": 10.0,
-    "discount": 80.0,
-    "link": "https://www.paguemenos.com.br/melatonina-sublingual-sabor-maracuja-300-comprimidos-health-labs-177592633839rsw6/p",
-    "notified_at": "2026-11-24T02:45:58.878554"
+  "magazine luiza_mag_238497200": {
+    "id": "mag_238497200",
+    "name": "Aparador de Pelos Philco PAP16 8 em 1 com Acessórios",
+    "store": "Magazine Luiza",
+    "price": 109.9,
+    "discount": 87.8,
+    "link": "https://www.magazineluiza.com.br/aparador-de-pelos-philco-pap16-8-em-1-com-acessorios/p/238497200/pf/papp/",
+    "notified_at": "2026-11-24T00:21:37.434728"
   },
-  "pague menos_176954": {
-    "id": "176954",
-    "name": "Creme Acelerador De Bronzeado Bronzy 60g",
-    "store": "Pague Menos",
-    "price": 20.0,
-    "discount": 80.0,
-    "link": "https://www.paguemenos.com.br/creme-acelerador-de-bronzeado-bronzy-60g/p",
-    "notified_at": "2026-11-24T02:45:59.690418"
+  "magazine luiza_mag_240204400": {
+    "id": "mag_240204400",
+    "name": "Smart TV 65\" TCL 4K UHD MiniLED 65C7K 144Hz Google TV AiPQ Pro Google Assistente 4 HDMI",
+    "store": "Magazine Luiza",
+    "price": 4891.55,
+    "discount": 70.9,
+    "link": "https://www.magazineluiza.com.br/smart-tv-65-tcl-4k-uhd-miniled-65c7k-144hz-google-tv-aipq-pro-google-assistente-4-hdmi/p/240204400/et/elit/",
+    "notified_at": "2026-11-24T00:21:38.690319"
+  },
+  "magazine luiza_mag_240201500": {
+    "id": "mag_240201500",
+    "name": "Antena de Internet Via Satélite Starlink Mini",
+    "store": "Magazine Luiza",
+    "price": 426.55,
+    "discount": 67.2,
+    "link": "https://www.magazineluiza.com.br/antena-de-internet-via-satelite-starlink-mini/p/240201500/in/eqrw/",
+    "notified_at": "2026-11-24T00:21:39.913134"
+  },
+  "magazine luiza_mag_240292600": {
+    "id": "mag_240292600",
+    "name": "Smart TV 43\" Full HD LED Semp S42 Google TV 2 HDMI",
+    "store": "Magazine Luiza",
+    "price": 1329.05,
+    "discount": 65.1,
+    "link": "https://www.magazineluiza.com.br/smart-tv-43-full-hd-led-semp-s42-google-tv-2-hdmi/p/240292600/et/elit/",
+    "notified_at": "2026-11-24T00:21:41.133319"
   }
 }

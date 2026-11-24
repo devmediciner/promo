@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 import json
 import re
 import time
@@ -6,6 +7,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger('scanner_gazin')
+
+# Detecta binário do curl multiplataforma (Windows e Linux/GitHub Actions)
+CURL_BIN = 'curl.exe' if shutil.which('curl.exe') else 'curl'
 
 GAZIN_CATEGORIES = [
     ('smartphones', 'Celulares e Smartphones'),
@@ -25,7 +29,7 @@ def get_current_build_id() -> str:
     default_build = 'Azwc7IX00Cp38BisSZRKI'
     try:
         res = subprocess.run(
-            ['curl.exe', '-s', 'https://www.gazin.com.br/'],
+            [CURL_BIN, '-s', 'https://www.gazin.com.br/'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -79,7 +83,7 @@ def fetch_gazin_category(slug: str, dept_name: str, build_id: str) -> list:
     url = f"https://www.gazin.com.br/_next/data/{build_id}/categoria/{slug}.json?slug={slug}&sort=desconto"
     try:
         res = subprocess.run(
-            ['curl.exe', '-s', url],
+            [CURL_BIN, '-s', url],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=12

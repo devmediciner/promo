@@ -9,6 +9,9 @@ from database import init_db, bulk_upsert_products, log_scan, get_stats
 from price_checker import enrich_products_with_market_data
 from notifier import dispatch_bug_notifications
 from scanner_gazin import scan_gazin_promos
+from scanner_magalu import scan_magalu_promos
+from scanner_americanas import scan_americanas_promos
+from scanner_drogasil import scan_drogasil_promos
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('promo_scanner')
@@ -293,19 +296,28 @@ def run_full_scan():
         if parsed['is_bug']:
             total_bugs += 1
 
-    # 6. Varredura no e-commerce da Gazin (www.gazin.com.br)
-    try:
-        gazin_prods = scan_gazin_promos()
-        for gp in gazin_prods:
-            if gp['id'] not in processed_ids:
-                processed_ids.add(gp['id'])
-                products_to_save.append(gp)
-                if gp.get('discount_pct', 0) >= 70:
-                    total_promos += 1
-                if gp.get('is_bug'):
-                    total_bugs += 1
-    except Exception as eg:
-        logger.warning(f"Aviso ao varrer Gazin: {eg}")
+    # 6. Varredura multi-lojas: Gazin, Magalu, Americanas, Drogasil
+    extra_scanners = [
+        ("Gazin", scan_gazin_promos),
+        ("Magazine Luiza", scan_magalu_promos),
+        ("Americanas", scan_americanas_promos),
+        ("Drogasil", scan_drogasil_promos)
+    ]
+    
+    for store_name, scanner_fn in extra_scanners:
+        try:
+            items = scanner_fn()
+            for p in items:
+                p_key = f"{p.get('store', store_name)}_{p.get('id')}"
+                if p_key not in processed_ids:
+                    processed_ids.add(p_key)
+                    products_to_save.append(p)
+                    if p.get('discount_pct', 0) >= 70:
+                        total_promos += 1
+                    if p.get('is_bug'):
+                        total_bugs += 1
+        except Exception as es:
+            logger.warning(f"Aviso ao varrer {store_name}: {es}")
 
     # Enriquecimento com preço de concorrentes e links comparadores (Google Shopping / Buscapé)
     try:

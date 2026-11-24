@@ -185,7 +185,7 @@
               PROMORADAR <span class="bg-gradient-to-r from-rose-500 via-amber-400 to-sky-400 bg-clip-text text-transparent">MULTI-LOJAS</span>
             </h1>
             <span id="mode-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              Pague Menos + Gazin
+              5 Grandes Lojas Ativas
             </span>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
@@ -334,7 +334,7 @@
       <!-- STORE SELECTOR -->
       <div>
         <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2 block">
-          Lojas Monitoradas:
+          Lojas Monitoradas (5 Redes):
         </span>
         <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
           <button onclick="setStore('todas')" id="store-todas" class="store-btn px-4 py-1.5 rounded-full font-bold whitespace-nowrap bg-indigo-600 text-white border border-indigo-500 transition shadow-sm flex items-center gap-1.5">
@@ -344,7 +344,16 @@
             💊 Pague Menos
           </button>
           <button onclick="setStore('Gazin')" id="store-gazin" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
-            🏬 Gazin (Smartphones, Eletro, Móveis)
+            🏬 Gazin
+          </button>
+          <button onclick="setStore('Magazine Luiza')" id="store-magalu" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            💙 Magalu
+          </button>
+          <button onclick="setStore('Americanas')" id="store-americanas" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            🔴 Americanas
+          </button>
+          <button onclick="setStore('Drogasil')" id="store-drogasil" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            💊 Drogasil
           </button>
         </div>
       </div>
@@ -717,7 +726,10 @@
       const map = {
         'todas': 'store-todas',
         'Pague Menos': 'store-paguemenos',
-        'Gazin': 'store-gazin'
+        'Gazin': 'store-gazin',
+        'Magazine Luiza': 'store-magalu',
+        'Americanas': 'store-americanas',
+        'Drogasil': 'store-drogasil'
       };
 
       const btnId = map[store];
@@ -1254,7 +1266,23 @@
       const imageSrc = p.image || 'https://via.placeholder.com/200?text=Sem+Foto';
       const isMarketVerified = p.market_verified === true || p.market_verified === 1;
       const store = p.store || 'Pague Menos';
-      const isGazin = store.toLowerCase().includes('gazin');
+      const storeLower = store.toLowerCase();
+      let storeBadge = '💊 Pague Menos';
+      let storeBadgeStyle = 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+      if (storeLower.includes('gazin')) {
+        storeBadge = '🏬 Gazin';
+        storeBadgeStyle = 'bg-sky-500/20 text-sky-300 border border-sky-500/30';
+      } else if (storeLower.includes('magazin') || storeLower.includes('magalu')) {
+        storeBadge = '💙 Magalu';
+        storeBadgeStyle = 'bg-blue-500/20 text-blue-300 border border-blue-500/30';
+      } else if (storeLower.includes('americanas')) {
+        storeBadge = '🔴 Americanas';
+        storeBadgeStyle = 'bg-red-500/20 text-red-300 border border-red-500/30';
+      } else if (storeLower.includes('drogasil')) {
+        storeBadge = '💊 Drogasil';
+        storeBadgeStyle = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+      }
+
       const eanQuery = encodeURIComponent(p.ean || p.name);
       const googleShopUrl = (p.comparison_urls && p.comparison_urls.google_shopping) || `https://www.google.com.br/search?q=${eanQuery}&tbm=shop`;
       const buscapeUrl = (p.comparison_urls && p.comparison_urls.buscape) || `https://www.buscape.com.br/search?q=${eanQuery}`;
@@ -1273,8 +1301,8 @@
               <span class="px-2.5 py-1 rounded-lg text-xs font-black tracking-wide ${p.discount_pct >= 80 ? 'bg-gradient-to-r from-rose-600 to-amber-500 text-white' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
                 -${p.discount_pct}% OFF
               </span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isGazin ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
-                ${isGazin ? '🏬 Gazin' : '💊 Pague Menos'}
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${storeBadgeStyle}">
+                ${storeBadge}
               </span>
             </div>
             <div class="flex items-center gap-1">
