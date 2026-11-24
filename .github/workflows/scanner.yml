@@ -1,18 +1,8 @@
 name: PromoRadar Monitor & Auto-Deploy
 
 on:
-  schedule:
-    # Executa a cada 10 minutos automaticamente
-    - cron: '*/10 * * * *'
-  workflow_dispatch: # Permite disparar manualmente pelo botão "Run workflow" no GitHub
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'data/**'
-      - 'promos.json'
-      - 'promos.db'
-      - 'README.md'
+  workflow_dispatch: # Apenas disparo manual se o usuário quiser no futuro, NUNCA automático
+
 
 permissions:
   contents: write
