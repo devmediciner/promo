@@ -179,8 +179,9 @@ def send_promo_alert(product: dict, market_info: str = ""):
                 msg_lines.append(f"🛡️ Preço de Mercado: {market_info}")
             msg_lines.append(f"\n🛒 Link: {link}")
             
+            clean_title = title.encode('ascii', 'ignore').decode('ascii')
             headers = {
-                "Title": title.encode('utf-8'),
+                "Title": clean_title,
                 "Priority": "urgent",
                 "Tags": "rotating_light,fire,dollar",
                 "Click": link

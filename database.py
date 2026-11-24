@@ -49,6 +49,8 @@ def init_db():
         c.execute("ALTER TABLE products ADD COLUMN market_verified INTEGER DEFAULT 0")
     if 'market_price' not in columns:
         c.execute("ALTER TABLE products ADD COLUMN market_price REAL DEFAULT 0")
+    if 'store' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN store TEXT DEFAULT 'Pague Menos'")
     
     c.execute('''
         CREATE TABLE IF NOT EXISTS scan_history (
@@ -83,14 +85,15 @@ def bulk_upsert_products(product_list: list):
     
     for prod in product_list:
         dept = prod.get('department') or 'Geral'
+        store = prod.get('store') or 'Pague Menos'
         c.execute('''
             INSERT INTO products (
                 id, name, brand, category, department, all_categories,
                 link, image, list_price, sell_price,
                 discount_pct, savings, available, stock_quantity,
-                is_bug, bug_score, bug_reasons,
+                is_bug, bug_score, bug_reasons, store,
                 first_seen, last_seen, times_seen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 brand = excluded.brand,
@@ -108,13 +111,14 @@ def bulk_upsert_products(product_list: list):
                 is_bug = excluded.is_bug,
                 bug_score = excluded.bug_score,
                 bug_reasons = excluded.bug_reasons,
+                store = excluded.store,
                 last_seen = excluded.last_seen,
                 times_seen = products.times_seen + 1
         ''', (
             prod['id'], prod['name'], prod['brand'], prod['category'], dept, json.dumps(prod.get('all_categories', [])),
             prod['link'], prod['image'], prod['list_price'], prod['sell_price'],
             prod['discount_pct'], prod['savings'], 1 if prod['available'] else 0, prod['stock_quantity'],
-            1 if prod['is_bug'] else 0, prod['bug_score'], json.dumps(prod.get('bug_reasons', [])),
+            1 if prod['is_bug'] else 0, prod['bug_score'], json.dumps(prod.get('bug_reasons', [])), store,
             now, now
         ))
     

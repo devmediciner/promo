@@ -1,8 +1,8 @@
 {
-  "ntfy_topic": "promobug_devmediciner",
-  "telegram_bot_token": "",
-  "telegram_chat_id": "",
+  "ntfy_topic": "devmedbug_bot",
+  "telegram_bot_token": "9281654477:AAFxoreEjF0URSLg4O6tOM8FOhdi84LSwig",
+  "telegram_chat_id": "436623541",
   "discord_webhook": "",
-  "min_bug_score": 70,
+  "min_bug_score": 80,
   "ignore_medicines": true
 }

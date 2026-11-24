@@ -182,10 +182,10 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">PROMORADAR</span>
+              PROMORADAR <span class="bg-gradient-to-r from-rose-500 via-amber-400 to-sky-400 bg-clip-text text-transparent">MULTI-LOJAS</span>
             </h1>
             <span id="mode-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              Sob Demanda
+              Pague Menos + Gazin
             </span>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
@@ -200,23 +200,23 @@
       </div>
 
       <!-- HEADER ACTIONS -->
-      <div class="flex items-center gap-2.5">
-        <button onclick="openNotificationModal()" title="Receber alertas de PromoBugs no celular" class="px-3 py-2 rounded-lg border border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10 text-amber-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+      <div class="flex items-center gap-2">
+        <button onclick="openNotificationModal()" title="Receber alertas de PromoBugs no Telegram / Celular" class="px-3 py-2 rounded-lg border border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10 text-amber-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
           <i class="fa-solid fa-mobile-screen-button text-amber-400"></i>
           <span class="hidden sm:inline">Alertas Celular</span>
         </button>
 
-        <button id="sound-btn" onclick="toggleSound()" title="Alerta sonoro ao detectar bug" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
-          <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
-          <span class="hidden sm:inline">Som</span>
-        </button>
-
-        <button onclick="downloadCSV()" title="Exportar dados para Excel/CSV" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+        <button onclick="downloadCSV()" title="Exportar dados para Excel/CSV" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
           <i class="fa-solid fa-file-csv text-blue-400"></i>
           <span class="hidden sm:inline">CSV</span>
         </button>
 
-        <button id="scan-btn" onclick="triggerScan()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-900/40 transition active:scale-95">
+        <button id="sync-gh-btn" onclick="triggerGitHubUpdate()" title="Atualizar e sincronizar direto no GitHub Pages" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95">
+          <i id="sync-gh-icon" class="fa-brands fa-github text-sm text-sky-400"></i>
+          <span id="sync-gh-text" class="hidden sm:inline">Sincronizar GitHub</span>
+        </button>
+
+        <button id="scan-btn" onclick="triggerScan()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-900/40 transition active:scale-95">
           <i id="scan-icon" class="fa-solid fa-arrows-rotate"></i>
           <span id="scan-btn-text">Atualizar</span>
         </button>
@@ -331,6 +331,24 @@
     <!-- FILTER & CONTROLS SECTION -->
     <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
       
+      <!-- STORE SELECTOR -->
+      <div>
+        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2 block">
+          Lojas Monitoradas:
+        </span>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <button onclick="setStore('todas')" id="store-todas" class="store-btn px-4 py-1.5 rounded-full font-bold whitespace-nowrap bg-indigo-600 text-white border border-indigo-500 transition shadow-sm flex items-center gap-1.5">
+            🌐 Todas as Lojas
+          </button>
+          <button onclick="setStore('Pague Menos')" id="store-paguemenos" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            💊 Pague Menos
+          </button>
+          <button onclick="setStore('Gazin')" id="store-gazin" class="store-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            🏬 Gazin (Smartphones, Eletro, Móveis)
+          </button>
+        </div>
+      </div>
+
       <!-- DEPARTMENTS SELECTOR -->
       <div>
         <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2 block">
@@ -338,10 +356,19 @@
         </span>
         <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
           <button onclick="setDepartment('todos')" id="dept-todos" class="dept-btn px-4 py-1.5 rounded-full font-bold whitespace-nowrap bg-indigo-600 text-white border border-indigo-500 transition shadow-sm">
-            🌐 Todo o Site
+            🌐 Todos os Departamentos
           </button>
           <button onclick="setDepartment('Dermo e Beleza')" id="dept-dermo" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
             ✨ Dermo & Beleza
+          </button>
+          <button onclick="setDepartment('Celulares')" id="dept-smartphones" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            📱 Smartphones & Tech
+          </button>
+          <button onclick="setDepartment('Eletro')" id="dept-eletro" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            ❄️ Eletrodomésticos
+          </button>
+          <button onclick="setDepartment('Móveis')" id="dept-moveis" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🛋️ Móveis & Decoração
           </button>
           <button onclick="setDepartment('Medicamentos e Saúde')" id="dept-med" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
             💊 Medicamentos & Saúde
@@ -349,11 +376,8 @@
           <button onclick="setDepartment('Higiene Pessoal')" id="dept-higiene" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
             🧴 Higiene Pessoal
           </button>
-          <button onclick="setDepartment('Mamães e Bebês')" id="dept-bebes" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-            👶 Mamães & Bebês
-          </button>
           <button onclick="setDepartment('Vida Saudável')" id="dept-vida" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-            🥗 Suplementos & Vitaminas
+            🥗 Suplementos & Nutrição
           </button>
         </div>
       </div>
@@ -361,8 +385,8 @@
       <!-- Quick Action Pills + BOTÃO IGNORAR MEDICAMENTOS -->
       <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs border-t border-slate-800/80 pt-3">
         
-        <button onclick="toggleExcludeMedicines()" id="btn-exclude-meds" class="px-4 py-1.5 rounded-full font-bold whitespace-nowrap border transition flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700">
-          <i id="icon-exclude-meds" class="fa-solid fa-ban text-slate-400"></i>
+        <button onclick="toggleExcludeMedicines()" id="btn-exclude-meds" class="px-4 py-1.5 rounded-full font-bold whitespace-nowrap border transition flex items-center gap-2 bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-950/40">
+          <i id="icon-exclude-meds" class="fa-solid fa-ban text-white"></i>
           <span>Ignorar Medicamentos</span>
         </button>
 
@@ -429,7 +453,7 @@
       <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
         <div>
           Exibindo: <span id="count-visible" class="font-bold text-white">0</span> de <span id="count-total" class="font-bold text-white">0</span> ofertas (<span id="count-discount" class="text-rose-400 font-bold">&ge; 70%</span>)
-          <span id="filter-meds-indicator" class="hidden ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span id="filter-meds-indicator" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
             🚫 Sem Medicamentos
           </span>
         </div>
@@ -490,12 +514,13 @@
     // State
     let allProducts = [];
     let filteredProducts = [];
+    let currentStore = 'todas';
     let currentDepartment = 'todos';
     let currentFilter = 'all_70';
     let minDiscount = 70.0;
     let inStockOnly = false;
     let promoBugOnly = false;
-    let excludeMedicines = false;
+    let excludeMedicines = true;
     let currentCategory = '';
     let visibleCount = 0;
     const batchSize = 24;
@@ -677,6 +702,31 @@
       resetAndRender();
     }
 
+    function setStore(store) {
+      currentStore = store;
+      document.querySelectorAll('.store-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-500');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      });
+
+      const map = {
+        'todas': 'store-todas',
+        'Pague Menos': 'store-paguemenos',
+        'Gazin': 'store-gazin'
+      };
+
+      const btnId = map[store];
+      if (btnId) {
+        const activeBtn = document.getElementById(btnId);
+        if (activeBtn) {
+          activeBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          activeBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-500');
+        }
+      }
+
+      resetAndRender();
+    }
+
     function setDepartment(dept) {
       currentDepartment = dept;
       document.querySelectorAll('.dept-btn').forEach(btn => {
@@ -687,9 +737,11 @@
       const map = {
         'todos': 'dept-todos',
         'Dermo e Beleza': 'dept-dermo',
+        'Celulares': 'dept-smartphones',
+        'Eletro': 'dept-eletro',
+        'Móveis': 'dept-moveis',
         'Medicamentos e Saúde': 'dept-med',
         'Higiene Pessoal': 'dept-higiene',
-        'Mamães e Bebês': 'dept-bebes',
         'Vida Saudável': 'dept-vida'
       };
 
@@ -958,14 +1010,14 @@
       try {
         const res = await fetch('/api/scan', { method: 'POST' });
         if (res.ok) {
-          showToast('Varrendo catálogo da Pague Menos ao vivo...', 'info');
+          showToast('Varrendo catálogo completo ao vivo...', 'info');
           setTimeout(async () => {
             await loadData();
             scanBtnText.innerText = 'Atualizar';
             scanIcon.classList.remove('fa-spin');
-            showToast('Catálogo atualizado!', 'success');
+            showToast('Catálogo atualizado com sucesso!', 'success');
             playAlertSound();
-          }, 6500);
+          }, 7000);
           return;
         }
       } catch (e) {}
@@ -977,6 +1029,60 @@
       playAlertSound();
     }
 
+    async function triggerGitHubUpdate() {
+      const btnText = document.getElementById('sync-gh-text');
+      const btnIcon = document.getElementById('sync-gh-icon');
+      
+      btnText.innerText = 'Sincronizando...';
+      btnIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-sm text-sky-400';
+      showToast('Iniciando varredura e sincronização...', 'info');
+
+      // 1. Tenta disparar via backend local com commit e push
+      try {
+        const res = await fetch('/api/scan-and-sync', { method: 'POST' });
+        if (res.ok) {
+          showToast('Varrendo catálogo e enviando ao GitHub...', 'info');
+          setTimeout(async () => {
+            await loadData();
+            btnText.innerText = 'Sincronizar GitHub';
+            btnIcon.className = 'fa-brands fa-github text-sm text-sky-400';
+            showToast('Catálogo sincronizado com o GitHub com sucesso!', 'success');
+            playAlertSound();
+          }, 11000);
+          return;
+        }
+      } catch (e) {}
+
+      // 2. Se estiver no GitHub Pages direto
+      const ghToken = localStorage.getItem('gh_token');
+      if (ghToken) {
+        showToast('Disparando GitHub Actions na nuvem...', 'info');
+        try {
+          const res = await fetch('https://api.github.com/repos/devmediciner/promo/actions/workflows/scanner.yml/dispatches', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${ghToken}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ref: 'main' })
+          });
+          if (res.status === 204 || res.ok) {
+            showToast('GitHub Actions disparado! O site atualizará em ~1 min.', 'success');
+            btnText.innerText = 'Sincronizar GitHub';
+            btnIcon.className = 'fa-brands fa-github text-sm text-sky-400';
+            return;
+          }
+        } catch (err) {}
+      }
+
+      // 3. Fallback: abre direto o painel de disparo no GitHub
+      showToast('Abrindo o GitHub Actions para disparo com 1 clique...', 'info');
+      btnText.innerText = 'Sincronizar GitHub';
+      btnIcon.className = 'fa-brands fa-github text-sm text-sky-400';
+      window.open('https://github.com/devmediciner/promo/actions/workflows/scanner.yml', '_blank');
+    }
+
     // FILTRAGEM ULTRA-RÁPIDA CLIENT-SIDE
     function applyFilters() {
       const search = document.getElementById('search-input').value.trim().toLowerCase();
@@ -984,6 +1090,12 @@
       const sort = document.getElementById('sort-select').value;
 
       filteredProducts = allProducts.filter(p => {
+        // Loja (Pague Menos / Gazin)
+        if (currentStore !== 'todas') {
+          const pStore = (p.store || 'Pague Menos').toLowerCase();
+          if (pStore !== currentStore.toLowerCase()) return false;
+        }
+
         // Desconto
         if (p.discount_pct < minDiscount) return false;
 
@@ -1136,6 +1248,8 @@
       const reasons = p.bug_reasons || [];
       const imageSrc = p.image || 'https://via.placeholder.com/200?text=Sem+Foto';
       const isMarketVerified = p.market_verified === true || p.market_verified === 1;
+      const store = p.store || 'Pague Menos';
+      const isGazin = store.toLowerCase().includes('gazin');
       const eanQuery = encodeURIComponent(p.ean || p.name);
       const googleShopUrl = (p.comparison_urls && p.comparison_urls.google_shopping) || `https://www.google.com.br/search?q=${eanQuery}&tbm=shop`;
       const buscapeUrl = (p.comparison_urls && p.comparison_urls.buscape) || `https://www.buscape.com.br/search?q=${eanQuery}`;
@@ -1150,9 +1264,14 @@
         <div class="glass-card rounded-2xl p-4 flex flex-col justify-between relative group transition duration-300 hover:-translate-y-1 hover:border-slate-700 ${isBug ? 'border-rose-500/40 bug-pulse' : 'border-slate-800'}">
           
           <div class="flex items-start justify-between gap-2 mb-2 z-10">
-            <span class="px-2.5 py-1 rounded-lg text-xs font-black tracking-wide ${p.discount_pct >= 80 ? 'bg-gradient-to-r from-rose-600 to-amber-500 text-white' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
-              -${p.discount_pct}% OFF
-            </span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="px-2.5 py-1 rounded-lg text-xs font-black tracking-wide ${p.discount_pct >= 80 ? 'bg-gradient-to-r from-rose-600 to-amber-500 text-white' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
+                -${p.discount_pct}% OFF
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isGazin ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
+                ${isGazin ? '🏬 Gazin' : '💊 Pague Menos'}
+              </span>
+            </div>
             <div class="flex items-center gap-1">
               ${isMarketVerified ? `
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white flex items-center gap-1 shadow-md shadow-emerald-950" title="Preço mais baixo comprovado no concorrente">

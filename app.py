@@ -4,6 +4,7 @@ import csv
 import io
 import time
 import threading
+import subprocess
 from datetime import datetime
 from typing import Optional
 
@@ -88,6 +89,24 @@ def trigger_scan():
     
     threading.Thread(target=scan_worker, daemon=True).start()
     return {"status": "started", "message": "Varredura geral de promoções iniciada sob demanda!"}
+
+@app.post("/api/scan-and-sync")
+def trigger_scan_and_sync():
+    global scan_state
+    if scan_state["is_scanning"]:
+        return JSONResponse(status_code=409, content={"status": "already_running", "message": "Varredura já está em andamento."})
+    
+    def worker_with_push():
+        scan_worker()
+        try:
+            subprocess.run(['git', 'add', 'data/promos.json', 'promos.json', 'promos.db'], timeout=15)
+            subprocess.run(['git', 'commit', '-m', 'Auto-update: Catálogo atualizado via Painel Web [skip ci]'], timeout=15)
+            subprocess.run(['git', 'push', 'origin', 'main'], timeout=30)
+        except Exception:
+            pass
+
+    threading.Thread(target=worker_with_push, daemon=True).start()
+    return {"status": "started", "message": "Varredura iniciada! Os dados serão atualizados e enviados ao GitHub automaticamente."}
 
 @app.get("/api/config")
 def get_config_endpoint():

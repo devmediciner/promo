@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import init_db, bulk_upsert_products, log_scan, get_stats
 from price_checker import enrich_products_with_market_data
 from notifier import dispatch_bug_notifications
+from scanner_gazin import scan_gazin_promos
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('promo_scanner')
@@ -168,6 +169,7 @@ def parse_catalog_product(p: dict):
             'category': main_cat,
             'department': department,
             'all_categories': categories,
+            'store': 'Pague Menos',
             'ean': ean,
             'link': link,
             'image': image,
@@ -290,6 +292,20 @@ def run_full_scan():
             total_promos += 1
         if parsed['is_bug']:
             total_bugs += 1
+
+    # 6. Varredura no e-commerce da Gazin (www.gazin.com.br)
+    try:
+        gazin_prods = scan_gazin_promos()
+        for gp in gazin_prods:
+            if gp['id'] not in processed_ids:
+                processed_ids.add(gp['id'])
+                products_to_save.append(gp)
+                if gp.get('discount_pct', 0) >= 70:
+                    total_promos += 1
+                if gp.get('is_bug'):
+                    total_bugs += 1
+    except Exception as eg:
+        logger.warning(f"Aviso ao varrer Gazin: {eg}")
 
     # Enriquecimento com preço de concorrentes e links comparadores (Google Shopping / Buscapé)
     try:
