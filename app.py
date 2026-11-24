@@ -12,21 +12,20 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from database import get_connection, get_stats, init_db
 from scanner import run_full_scan
+from notifier import load_config, save_config, send_test_notification
 
-app = FastAPI(title="Pague Menos PromoBug Radar", version="2.2.0")
+app = FastAPI(title="Pague Menos PromoBug Radar", version="2.3.0")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX_HTML_PATH = os.path.join(BASE_DIR, "index.html")
 if not os.path.exists(INDEX_HTML_PATH):
     INDEX_HTML_PATH = os.path.join(BASE_DIR, "templates", "index.html")
 
-AUTO_SCAN_INTERVAL = int(os.environ.get("AUTO_SCAN_INTERVAL", 600))
-
 scan_state = {
     "is_scanning": False,
     "last_result": None,
     "last_error": None,
-    "next_scheduled_scan": None
+    "last_scan_time": 0
 }
 
 def scan_worker():
@@ -38,29 +37,27 @@ def scan_worker():
     try:
         res = run_full_scan()
         scan_state["last_result"] = res
+        scan_state["last_scan_time"] = time.time()
     except Exception as e:
         scan_state["last_error"] = str(e)
     finally:
         scan_state["is_scanning"] = False
-        scan_state["next_scheduled_scan"] = time.time() + AUTO_SCAN_INTERVAL
-
-def background_scheduler_loop():
-    time.sleep(3)
-    scan_worker()
-    while True:
-        time.sleep(15)
-        now = time.time()
-        next_scan = scan_state.get("next_scheduled_scan")
-        if next_scan and now >= next_scan and not scan_state["is_scanning"]:
-            scan_worker()
 
 @app.on_event("startup")
 def startup_event():
     init_db()
-    threading.Thread(target=background_scheduler_loop, daemon=True).start()
+    # Varre inicialmente apenas se o arquivo de ofertas não existir
+    json_path = os.path.join(BASE_DIR, "data", "promos.json")
+    if not os.path.exists(json_path):
+        threading.Thread(target=scan_worker, daemon=True).start()
 
 @app.get("/", response_class=HTMLResponse)
 def index():
+    # Atualização sob demanda: se entrar na página e o último scan foi há mais de 15 minutos, atualiza em background
+    now = time.time()
+    if now - scan_state["last_scan_time"] > 900 and not scan_state["is_scanning"]:
+        threading.Thread(target=scan_worker, daemon=True).start()
+        
     with open(INDEX_HTML_PATH, "r", encoding="utf-8") as f:
         content = f.read()
     return HTMLResponse(content=content)
@@ -80,8 +77,7 @@ def api_stats():
     stats = get_stats()
     stats["is_scanning"] = scan_state["is_scanning"]
     stats["last_scan_result"] = scan_state["last_result"]
-    stats["next_scheduled_scan"] = scan_state["next_scheduled_scan"]
-    stats["auto_interval_minutes"] = AUTO_SCAN_INTERVAL // 60
+    stats["last_scan_time"] = scan_state["last_scan_time"]
     return stats
 
 @app.post("/api/scan")
@@ -91,7 +87,27 @@ def trigger_scan():
         return JSONResponse(status_code=409, content={"status": "already_running", "message": "Varredura já está em andamento."})
     
     threading.Thread(target=scan_worker, daemon=True).start()
-    return {"status": "started", "message": "Varredura geral de promoções iniciada em segundo plano!"}
+    return {"status": "started", "message": "Varredura geral de promoções iniciada sob demanda!"}
+
+@app.get("/api/config")
+def get_config_endpoint():
+    return load_config()
+
+@app.post("/api/config")
+async def update_config_endpoint(request: Request):
+    data = await request.json()
+    saved = save_config(data)
+    return {"status": "ok", "config": saved}
+
+@app.post("/api/test-notification")
+async def test_notification_endpoint(request: Request):
+    try:
+        data = await request.json()
+        topic = data.get("topic", "")
+    except Exception:
+        topic = ""
+    res = send_test_notification(topic)
+    return res
 
 @app.get("/api/promos")
 def get_promos(

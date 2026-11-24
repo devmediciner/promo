@@ -6,6 +6,8 @@ import logging
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from database import init_db, bulk_upsert_products, log_scan, get_stats
+from price_checker import enrich_products_with_market_data
+from notifier import dispatch_bug_notifications
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('promo_scanner')
@@ -129,6 +131,7 @@ def parse_catalog_product(p: dict):
             return None
             
         item = items[0]
+        ean = str(item.get('ean') or '').strip()
         image = ''
         images = item.get('images') or []
         if images:
@@ -165,6 +168,7 @@ def parse_catalog_product(p: dict):
             'category': main_cat,
             'department': department,
             'all_categories': categories,
+            'ean': ean,
             'link': link,
             'image': image,
             'list_price': round(list_price, 2),
@@ -287,6 +291,12 @@ def run_full_scan():
         if parsed['is_bug']:
             total_bugs += 1
 
+    # Enriquecimento com preço de concorrentes e links comparadores (Google Shopping / Buscapé)
+    try:
+        products_to_save = enrich_products_with_market_data(products_to_save)
+    except Exception as e:
+        logger.warning(f"Aviso ao consultar concorrentes: {e}")
+
     bulk_upsert_products(products_to_save)
     total_saved = len(products_to_save)
     duration = round(time.time() - t_start, 2)
@@ -295,6 +305,12 @@ def run_full_scan():
     stats = get_stats()
     export_static_json(products_to_save, stats)
     
+    # Envio de notificações para celular via ntfy/Telegram para bugs de alto impacto
+    try:
+        dispatch_bug_notifications(products_to_save)
+    except Exception as e:
+        logger.warning(f"Erro ao disparar notificações de PromoBugs: {e}")
+        
     logger.info(f"Varredura global concluída em {duration}s! Total únicos: {total_saved} | Descontos >= 70%: {total_promos} | PromoBugs: {total_bugs}")
     
     return {

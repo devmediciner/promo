@@ -43,6 +43,12 @@ def init_db():
     columns = [row[1] for row in c.fetchall()]
     if 'department' not in columns:
         c.execute("ALTER TABLE products ADD COLUMN department TEXT")
+    if 'ean' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN ean TEXT")
+    if 'market_verified' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN market_verified INTEGER DEFAULT 0")
+    if 'market_price' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN market_price REAL DEFAULT 0")
     
     c.execute('''
         CREATE TABLE IF NOT EXISTS scan_history (

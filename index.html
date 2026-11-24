@@ -71,6 +71,61 @@
     <i class="fa-solid fa-arrow-up text-sm"></i>
   </button>
 
+  <!-- MODAL NOTIFICAÇÕES CELULAR (NTFY.SH) -->
+  <div id="modal-notifications" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700 shadow-2xl relative space-y-4">
+      <button onclick="closeNotificationModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Alertas Push no Celular</h3>
+          <p class="text-xs text-slate-400">Gratuito via ntfy (Android e iOS, sem cadastro)</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+          <p class="font-bold text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> Como receber em 3 passos rápidos:
+          </p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed">
+            <li>Instale o app gratuito <strong class="text-white">ntfy</strong> na Play Store (Android) ou App Store (iPhone).</li>
+            <li>No app, clique em <strong class="text-white">+</strong> e digite o seu tópico abaixo.</li>
+            <li>Pronto! Quando entrar um PromoBug real, seu celular apita na hora!</li>
+          </ol>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Seu Tópico Privado de Alertas:</label>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500 font-mono text-[11px]">ntfy.sh/</span>
+            <input id="ntfy-topic-input" type="text" value="promobug_devmediciner" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-2 pt-2">
+          <button onclick="sendTestNotification()" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-paper-plane text-amber-400"></i> Testar no Celular
+          </button>
+          <button onclick="saveNotificationSettings()" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-950 transition">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Tópico
+          </button>
+        </div>
+
+        <div class="text-center pt-1">
+          <a id="ntfy-web-link" href="https://ntfy.sh/promobug_devmediciner" target="_blank" rel="noopener noreferrer" class="text-[11px] text-indigo-400 hover:underline inline-flex items-center gap-1">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Abrir feed no navegador (ntfy.sh)
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header class="sticky top-0 z-40 glass-card border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
@@ -86,14 +141,13 @@
               PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">PROMORADAR</span>
             </h1>
             <span id="mode-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              Online 24/7
+              Sob Demanda
             </span>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
             <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
-              Auto-Scan Ativo (10m)
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Atualiza ao Abrir / Clicar
             </span>
             <span>•</span>
             <span id="last-update-text">Atualizado recentemente</span>
@@ -103,6 +157,11 @@
 
       <!-- HEADER ACTIONS -->
       <div class="flex items-center gap-2.5">
+        <button onclick="openNotificationModal()" title="Receber alertas de PromoBugs no celular" class="px-3 py-2 rounded-lg border border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10 text-amber-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+          <i class="fa-solid fa-mobile-screen-button text-amber-400"></i>
+          <span class="hidden sm:inline">Alertas Celular</span>
+        </button>
+
         <button id="sound-btn" onclick="toggleSound()" title="Alerta sonoro ao detectar bug" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
           <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
           <span class="hidden sm:inline">Som</span>
@@ -676,12 +735,92 @@
       setQuickFilter('all_70');
     }
 
-    function triggerScan() {
-      showToast('Recarregando catálogo...', 'info');
-      loadData().then(() => {
-        showToast('Ofertas atualizadas!', 'success');
-        playAlertSound();
-      });
+    function openNotificationModal() {
+      const savedTopic = localStorage.getItem('ntfy_topic') || 'promobug_devmediciner';
+      document.getElementById('ntfy-topic-input').value = savedTopic;
+      document.getElementById('ntfy-web-link').href = `https://ntfy.sh/${savedTopic}`;
+      document.getElementById('modal-notifications').classList.remove('hidden');
+    }
+
+    function closeNotificationModal() {
+      document.getElementById('modal-notifications').classList.add('hidden');
+    }
+
+    async function sendTestNotification() {
+      const topic = document.getElementById('ntfy-topic-input').value.trim() || 'promobug_devmediciner';
+      showToast('Enviando push de teste para seu celular...', 'info');
+      try {
+        const res = await fetch(`https://ntfy.sh/${topic}`, {
+          method: 'POST',
+          body: '🎉 Conectado com sucesso! Seu celular agora receberá alertas instantâneos de PromoBugs da Pague Menos.',
+          headers: {
+            'Title': 'Radar PromoBug Conectado!',
+            'Priority': 'default',
+            'Tags': 'tada,bell'
+          }
+        });
+        if (res.ok) {
+          showToast('Alerta de teste enviado com sucesso!', 'success');
+          playAlertSound();
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        await fetch('/api/test-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: topic })
+        });
+        showToast('Alerta enviado via servidor local!', 'success');
+      } catch (err) {
+        showToast('Verifique a conexão ou tente novamente', 'warning');
+      }
+    }
+
+    async function saveNotificationSettings() {
+      const topic = document.getElementById('ntfy-topic-input').value.trim() || 'promobug_devmediciner';
+      localStorage.setItem('ntfy_topic', topic);
+      document.getElementById('ntfy-web-link').href = `https://ntfy.sh/${topic}`;
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ntfy_topic: topic })
+        });
+      } catch (e) {}
+      showToast(`Tópico "${topic}" salvo!`, 'success');
+      closeNotificationModal();
+    }
+
+    async function triggerScan() {
+      const scanBtnText = document.getElementById('scan-btn-text');
+      const scanIcon = document.getElementById('scan-icon');
+      
+      scanBtnText.innerText = 'Varrendo...';
+      scanIcon.classList.add('fa-spin');
+      showToast('Iniciando varredura sob demanda...', 'info');
+
+      try {
+        const res = await fetch('/api/scan', { method: 'POST' });
+        if (res.ok) {
+          showToast('Varrendo catálogo da Pague Menos ao vivo...', 'info');
+          setTimeout(async () => {
+            await loadData();
+            scanBtnText.innerText = 'Atualizar';
+            scanIcon.classList.remove('fa-spin');
+            showToast('Catálogo atualizado!', 'success');
+            playAlertSound();
+          }, 6500);
+          return;
+        }
+      } catch (e) {}
+
+      await loadData();
+      scanBtnText.innerText = 'Atualizar';
+      scanIcon.classList.remove('fa-spin');
+      showToast('Ofertas recarregadas!', 'success');
+      playAlertSound();
     }
 
     // FILTRAGEM ULTRA-RÁPIDA CLIENT-SIDE
@@ -842,6 +981,10 @@
       const isBug = p.is_bug === 1 || p.is_bug === true;
       const reasons = p.bug_reasons || [];
       const imageSrc = p.image || 'https://via.placeholder.com/200?text=Sem+Foto';
+      const isMarketVerified = p.market_verified === true || p.market_verified === 1;
+      const eanQuery = encodeURIComponent(p.ean || p.name);
+      const googleShopUrl = (p.comparison_urls && p.comparison_urls.google_shopping) || `https://www.google.com.br/search?q=${eanQuery}&tbm=shop`;
+      const buscapeUrl = (p.comparison_urls && p.comparison_urls.buscape) || `https://www.buscape.com.br/search?q=${eanQuery}`;
 
       const reasonsHtml = reasons.slice(0, 2).map(r => `
         <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/25">
@@ -856,11 +999,18 @@
             <span class="px-2.5 py-1 rounded-lg text-xs font-black tracking-wide ${p.discount_pct >= 80 ? 'bg-gradient-to-r from-rose-600 to-amber-500 text-white' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
               -${p.discount_pct}% OFF
             </span>
-            ${isBug ? `
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white flex items-center gap-1 shadow-md shadow-rose-950">
-                <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> PROMOBUG
-              </span>
-            ` : ''}
+            <div class="flex items-center gap-1">
+              ${isMarketVerified ? `
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white flex items-center gap-1 shadow-md shadow-emerald-950" title="Preço mais baixo comprovado no concorrente">
+                  <i class="fa-solid fa-shield-check text-[9px]"></i> PREÇO REAL
+                </span>
+              ` : ''}
+              ${isBug ? `
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white flex items-center gap-1 shadow-md shadow-rose-950">
+                  <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> PROMOBUG
+                </span>
+              ` : ''}
+            </div>
           </div>
 
           <div class="relative w-full h-44 bg-white rounded-xl p-3 flex items-center justify-center overflow-hidden mb-3">
@@ -886,7 +1036,25 @@
               ${reasonsHtml}
             </div>
 
-            <div class="mt-auto pt-3 border-t border-slate-800/80">
+            ${isMarketVerified ? `
+              <div class="mb-2 p-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center justify-between">
+                <span class="font-medium text-emerald-400"><i class="fa-solid fa-store text-[10px]"></i> ${p.market_store || 'Concorrente'}:</span>
+                <span class="font-bold">R$ ${(p.market_price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} <span class="text-emerald-400 text-[10px]">(-${p.real_discount_pct}%)</span></span>
+              </div>
+            ` : ''}
+
+            <!-- COMPARADORES DE PREÇO EXTERNOS -->
+            <div class="flex items-center gap-1.5 mb-2 py-1 border-t border-b border-slate-800/80 text-[10px] text-slate-400">
+              <span class="font-semibold text-slate-400">Ver Mercado:</span>
+              <a href="${googleShopUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 flex items-center gap-1 transition" title="Pesquisar preço no Google Shopping">
+                <i class="fa-brands fa-google text-[9px] text-blue-400"></i> Shopping
+              </a>
+              <a href="${buscapeUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 flex items-center gap-1 transition" title="Pesquisar preço no Buscapé">
+                <i class="fa-solid fa-magnifying-glass-dollar text-[9px] text-amber-400"></i> Buscapé
+              </a>
+            </div>
+
+            <div class="mt-auto pt-2">
               <div class="flex items-baseline justify-between">
                 <span class="text-xs text-slate-400 line-through">
                   De R$ ${p.list_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
@@ -918,6 +1086,10 @@
             </div>
 
           </div>
+
+        </div>
+      `;
+    }
 
         </div>
       `;
