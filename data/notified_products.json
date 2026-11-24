@@ -52,5 +52,23 @@
     "discount": 71.4,
     "link": "https://www.paguemenos.com.br/frasco-minoxid-turbinado-169x834o22778o56/p",
     "notified_at": "2026-11-23T23:43:41.296623"
+  },
+  "pague menos_183909": {
+    "id": "183909",
+    "name": "Melatonina Sublingual Sabor Maracujá 300 Comprimidos - Health Labs",
+    "store": "Pague Menos",
+    "price": 10.0,
+    "discount": 80.0,
+    "link": "https://www.paguemenos.com.br/melatonina-sublingual-sabor-maracuja-300-comprimidos-health-labs-177592633839rsw6/p",
+    "notified_at": "2026-11-24T02:45:58.878554"
+  },
+  "pague menos_176954": {
+    "id": "176954",
+    "name": "Creme Acelerador De Bronzeado Bronzy 60g",
+    "store": "Pague Menos",
+    "price": 20.0,
+    "discount": 80.0,
+    "link": "https://www.paguemenos.com.br/creme-acelerador-de-bronzeado-bronzy-60g/p",
+    "notified_at": "2026-11-24T02:45:59.690418"
   }
 }
