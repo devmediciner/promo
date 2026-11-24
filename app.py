@@ -13,10 +13,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from database import get_connection, get_stats, init_db
 from scanner import run_full_scan
 
-app = FastAPI(title="Pague Menos PromoBug Radar", version="2.1.0")
+app = FastAPI(title="Pague Menos PromoBug Radar", version="2.2.0")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INDEX_HTML_PATH = os.path.join(BASE_DIR, "templates", "index.html")
+INDEX_HTML_PATH = os.path.join(BASE_DIR, "index.html")
+if not os.path.exists(INDEX_HTML_PATH):
+    INDEX_HTML_PATH = os.path.join(BASE_DIR, "templates", "index.html")
 
 AUTO_SCAN_INTERVAL = int(os.environ.get("AUTO_SCAN_INTERVAL", 600))
 
@@ -62,6 +64,16 @@ def index():
     with open(INDEX_HTML_PATH, "r", encoding="utf-8") as f:
         content = f.read()
     return HTMLResponse(content=content)
+
+@app.get("/data/promos.json")
+def get_promos_json():
+    json_path = os.path.join(BASE_DIR, "data", "promos.json")
+    if not os.path.exists(json_path):
+        json_path = os.path.join(BASE_DIR, "promos.json")
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            return JSONResponse(content=json.load(f))
+    return JSONResponse(status_code=404, content={"error": "promos.json não encontrado"})
 
 @app.get("/api/stats")
 def api_stats():
@@ -118,7 +130,21 @@ def get_promos(
         query += " AND is_bug = 1"
         
     if exclude_medicines:
-        query += " AND (department NOT LIKE '%Medicamento%' AND category NOT LIKE '%Medicamento%' AND all_categories NOT LIKE '%Medicamentos e Saúde%')"
+        query += """ AND (
+            department NOT LIKE '%Medicamento%'
+            AND category NOT LIKE '%Medicamento%'
+            AND all_categories NOT LIKE '%Medicamentos e Saúde%'
+            AND name NOT LIKE '%comprimido%'
+            AND name NOT LIKE '%genérico%'
+            AND name NOT LIKE '%generico%'
+            AND name NOT LIKE '%cápsula dura%'
+            AND name NOT LIKE '%capsula dura%'
+            AND name NOT LIKE '%gotas %'
+            AND name NOT LIKE '%xarope%'
+            AND name NOT LIKE '%solução oral%'
+            AND name NOT LIKE '%suspensão oral%'
+            AND name NOT LIKE '%injetável%'
+        )"""
         
     if department and department.lower() != 'todos':
         query += " AND (department LIKE ? OR all_categories LIKE ?)"
@@ -136,12 +162,10 @@ def get_promos(
         query += " AND (name LIKE ? OR brand LIKE ?)"
         params.extend([f"%{search}%", f"%{search}%"])
         
-    # Count total matching
     count_query = f"SELECT COUNT(*) FROM ({query})"
     c.execute(count_query, params)
     total_matching = c.fetchone()[0]
     
-    # Sorting
     sort_map = {
         "discount_desc": "discount_pct DESC, savings DESC",
         "savings_desc": "savings DESC, discount_pct DESC",
@@ -225,7 +249,14 @@ def export_csv(
     query = "SELECT name, brand, department, category, list_price, sell_price, discount_pct, savings, available, stock_quantity, is_bug, bug_score, link FROM products WHERE discount_pct >= ?"
     params = [min_discount]
     if exclude_medicines:
-        query += " AND (department NOT LIKE '%Medicamento%' AND category NOT LIKE '%Medicamento%' AND all_categories NOT LIKE '%Medicamentos e Saúde%')"
+        query += """ AND (
+            department NOT LIKE '%Medicamento%'
+            AND category NOT LIKE '%Medicamento%'
+            AND all_categories NOT LIKE '%Medicamentos e Saúde%'
+            AND name NOT LIKE '%comprimido%'
+            AND name NOT LIKE '%genérico%'
+            AND name NOT LIKE '%generico%'
+        )"""
     if department and department.lower() != 'todos':
         query += " AND department LIKE ?"
         params.append(f"%{department}%")

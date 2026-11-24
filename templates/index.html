@@ -86,14 +86,14 @@
               PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">PROMORADAR</span>
             </h1>
             <span id="mode-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              GitHub Pages
+              Online 24/7
             </span>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
             <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
-              Radar Ativo 24/7
+              Auto-Scan Ativo (10m)
             </span>
             <span>•</span>
             <span id="last-update-text">Atualizado recentemente</span>
@@ -157,7 +157,7 @@
           <span id="kpi-promos" class="text-3xl font-extrabold text-white">0</span>
           <span class="text-xs text-amber-400 font-medium">itens no catálogo</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Dermo, higiene, mamães e mais</p>
+        <p class="text-[11px] text-slate-400 mt-1">Dermo, perfumes, higiene, etc.</p>
       </div>
 
       <!-- Card 3: Em Estoque -->
@@ -454,13 +454,51 @@
       }, 3000);
     }
 
-    // Carregamento de dados (Prioriza JSON estático do GitHub Pages, com fallback para API local)
+    // CLASSIFICADOR PRECISO DE MEDICAMENTO
+    function isMedicineProduct(p) {
+      if (!p) return false;
+      const dept = (p.department || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const allCats = (JSON.stringify(p.all_categories || [])).toLowerCase();
+      const name = (p.name || '').toLowerCase();
+
+      // 1. Departamentos e categorias farmacêuticas
+      if (dept.includes('medicamento') || cat.includes('medicamento') || allCats.includes('medicamento')) {
+        return true;
+      }
+      if (dept.includes('saúde') || dept.includes('saude')) {
+        // Se estiver em saúde e não for suplemento/vitamina
+        if (!cat.includes('suplemento') && !name.includes('suplemento') && !name.includes('vitamina') && !name.includes('proteína') && !name.includes('whey')) {
+          return true;
+        }
+      }
+
+      // 2. Termos farmacêuticos explícitos no título
+      const pharmaKeywords = [
+        'comprimido', 'comprimidos', 'cápsula dura', 'capsula dura',
+        'genérico', 'generico', 'gotas ', 'xarope', 'posologia', 'tarja',
+        'solução oral', 'solucao oral', 'suspensão oral', 'injetável', 'injetavel',
+        'anastrozol', 'imatinibe', 'letrozol', 'escitalopram', 'anlodipino', 'fluoxetina',
+        'quetiapina', 'desvenlafaxina', 'risperidona', 'losartana', 'atenolol', 'metformina'
+      ];
+
+      if (pharmaKeywords.some(k => name.includes(k))) {
+        // Preserva suplementos nutricionais legítimos
+        const supplementTerms = ['vitamina', 'suplemento', 'colágeno', 'colageno', 'creatina', 'whey', 'ômega', 'omega', 'melatonina'];
+        if (!supplementTerms.some(k => name.includes(k))) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    // Carregamento de dados
     async function loadData() {
       const sources = [
         'data/promos.json',
         'promos.json',
-        '/data/promos.json',
-        '/api/promos?min_discount=0&limit=100'
+        '/data/promos.json'
       ];
 
       for (const src of sources) {
@@ -477,17 +515,14 @@
                 const date = new Date(data.updated_at);
                 document.getElementById('last-update-text').innerText = `Atualizado às ${date.toLocaleTimeString('pt-BR')}`;
               }
-              console.log(`Carregado com sucesso de ${src} (${allProducts.length} itens)`);
               resetAndRender();
               return;
             }
           }
-        } catch (e) {
-          // Continua para o próximo fallback
-        }
+        } catch (e) {}
       }
 
-      // Se nada deu certo, tenta rota REST direta
+      // Fallback para API REST local caso o JSON estático não exista
       try {
         const statsRes = await fetch('/api/stats');
         if (statsRes.ok) {
@@ -495,7 +530,9 @@
           updateStats(stats);
           document.getElementById('mode-badge').innerText = 'Local API';
         }
-        const promosRes = await fetch(`/api/promos?min_discount=0&limit=100`);
+        let url = `/api/promos?min_discount=0&limit=100`;
+        if (excludeMedicines) url += '&exclude_medicines=true';
+        const promosRes = await fetch(url);
         if (promosRes.ok) {
           const pData = await promosRes.json();
           allProducts = pData.products || [];
@@ -513,6 +550,7 @@
       document.getElementById('kpi-savings').innerText = `R$ ${(stats.max_savings || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
     }
 
+    // TOGGLE IGNORAR MEDICAMENTOS
     function toggleExcludeMedicines() {
       excludeMedicines = !excludeMedicines;
       const btn = document.getElementById('btn-exclude-meds');
@@ -639,14 +677,14 @@
     }
 
     function triggerScan() {
-      showToast('Recarregando dados...', 'info');
+      showToast('Recarregando catálogo...', 'info');
       loadData().then(() => {
-        showToast('Dados atualizados com sucesso!', 'success');
+        showToast('Ofertas atualizadas!', 'success');
         playAlertSound();
       });
     }
 
-    // APLICAÇÃO DE FILTROS CLIENT-SIDE (ULTRARRÁPIDO)
+    // FILTRAGEM ULTRA-RÁPIDA CLIENT-SIDE
     function applyFilters() {
       const search = document.getElementById('search-input').value.trim().toLowerCase();
       const maxPrice = parseFloat(document.getElementById('max-price-select').value) || null;
@@ -665,14 +703,9 @@
         // Preço Máximo
         if (maxPrice !== null && p.sell_price > maxPrice) return false;
 
-        // Ignorar Medicamentos
-        if (excludeMedicines) {
-          const dept = (p.department || '').toLowerCase();
-          const cat = (p.category || '').toLowerCase();
-          const allCats = (JSON.stringify(p.all_categories || [])).toLowerCase();
-          if (dept.includes('medicamento') || cat.includes('medicamento') || allCats.includes('medicamento')) {
-            return false;
-          }
+        // IGNORAR MEDICAMENTOS (100% EFETIVO)
+        if (excludeMedicines && isMedicineProduct(p)) {
+          return false;
         }
 
         // Departamento
@@ -732,12 +765,13 @@
         emptyState.classList.remove('hidden');
         endMessage.classList.add('hidden');
         document.getElementById('count-visible').innerText = 0;
+        document.getElementById('spotlight-banner').classList.add('hidden');
         return;
       }
 
       emptyState.classList.add('hidden');
 
-      // Spotlight na melhor oferta
+      // Spotlight apenas com produtos válidos nos filtros atuais
       const topBug = filteredProducts.find(p => p.is_bug) || filteredProducts[0];
       renderSpotlight(topBug);
 
@@ -787,7 +821,10 @@
     });
 
     function renderSpotlight(p) {
-      if (!p) return;
+      if (!p) {
+        document.getElementById('spotlight-banner').classList.add('hidden');
+        return;
+      }
       const banner = document.getElementById('spotlight-banner');
       banner.classList.remove('hidden');
 
@@ -922,7 +959,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadData();
-      setInterval(loadData, 120000); // Recarrega arquivo a cada 2 minutos caso tenha atualização
+      setInterval(loadData, 120000);
     });
   </script>
 </body>
