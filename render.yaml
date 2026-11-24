@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: paguemenos-promoradar
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: AUTO_SCAN_INTERVAL
+        value: 600

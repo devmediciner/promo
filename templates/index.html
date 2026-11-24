@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pague Menos Radar | Rolagem Infinita & Caçador de PromoBugs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fff1f2',
+              500: '#e11d48',
+              600: '#be123c',
+              dark: '#0a0d14',
+              card: '#111726',
+              border: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080c14;
+      color: #f1f5f9;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(225, 29, 72, 0.09) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .bug-pulse {
+      animation: bugGlow 2s infinite ease-in-out;
+    }
+    @keyframes bugGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.6); }
+      50% { box-shadow: 0 0 25px rgba(249, 115, 22, 0.7); border-color: rgba(249, 115, 22, 0.9); }
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-rose-500 selection:text-white">
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none flex items-center gap-3 px-5 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-white shadow-2xl">
+    <i id="toast-icon" class="fa-solid fa-check-circle text-emerald-400 text-lg"></i>
+    <span id="toast-msg" class="text-sm font-medium">Notificação</span>
+  </div>
+
+  <!-- FLOATING BACK TO TOP -->
+  <button id="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 left-6 z-40 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 shadow-xl flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none hover:scale-110">
+    <i class="fa-solid fa-arrow-up text-sm"></i>
+  </button>
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- LOGO & STATUS -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-950/50">
+          <i class="fa-solid fa-radar text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              PAGUEMENOS <span class="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">RADAR GERAL</span>
+            </h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              Rolagem Infinita
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-3"></span>
+              Auto-Scan 24/7 (10m)
+            </span>
+            <span>•</span>
+            <span id="last-update-text">Atualizado há instantes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEADER ACTIONS -->
+      <div class="flex items-center gap-2.5">
+        <button id="sound-btn" onclick="toggleSound()" title="Alerta sonoro ao detectar bug" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+          <span class="hidden sm:inline">Som</span>
+        </button>
+
+        <button onclick="downloadCSV()" title="Exportar dados para Excel/CSV" class="px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+          <i class="fa-solid fa-file-csv text-blue-400"></i>
+          <span class="hidden sm:inline">CSV</span>
+        </button>
+
+        <button id="scan-btn" onclick="triggerScan()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-900/40 transition active:scale-95">
+          <i id="scan-icon" class="fa-solid fa-arrows-rotate"></i>
+          <span id="scan-btn-text">Escanear Agora</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- KPI STATS CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Card 1: PromoBugs -->
+      <div class="glass-card p-4 rounded-2xl relative overflow-hidden group hover:border-rose-500/50 transition">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-600/10 rounded-full blur-xl group-hover:bg-rose-600/20 transition"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-triangle-exclamation"></i> PromoBugs Ativos
+          </span>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-300">Crítico</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="kpi-bugs" class="text-3xl font-extrabold text-white">0</span>
+          <span class="text-xs text-rose-400 font-medium">erros ou 80%+</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Preços anômalos e super quedas</p>
+      </div>
+
+      <!-- Card 2: 70%+ OFF -->
+      <div class="glass-card p-4 rounded-2xl relative overflow-hidden group hover:border-amber-500/50 transition">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-fire"></i> Descontos &ge; 70%
+          </span>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300">Mega Promo</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="kpi-promos" class="text-3xl font-extrabold text-white">0</span>
+          <span class="text-xs text-amber-400 font-medium">itens no catálogo</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Dermo, higiene, mamães e mais</p>
+      </div>
+
+      <!-- Card 3: Em Estoque -->
+      <div class="glass-card p-4 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-box-check"></i> Prontos para Compra
+          </span>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Em Estoque</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="kpi-stock" class="text-3xl font-extrabold text-white">0</span>
+          <span class="text-xs text-emerald-400 font-medium">&ge; 70% disponíveis</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Estoque ativo para envio</p>
+      </div>
+
+      <!-- Card 4: Maior Economia -->
+      <div class="glass-card p-4 rounded-2xl relative overflow-hidden group hover:border-blue-500/50 transition">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-piggy-bank"></i> Maior Economia
+          </span>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/20 text-blue-300">Recorde</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="kpi-savings" class="text-2xl font-extrabold text-white">R$ 0,00</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Economia em um único produto</p>
+      </div>
+
+    </div>
+
+    <!-- SPOTLIGHT PROMOBUG BANNER -->
+    <div id="spotlight-banner" class="hidden glass-card rounded-2xl p-5 border border-rose-500/40 relative overflow-hidden bg-gradient-to-r from-rose-950/40 via-slate-900/80 to-slate-900/90">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-5">
+        <div class="flex items-center gap-4">
+          <div class="relative w-20 h-20 bg-white rounded-xl p-1 flex-shrink-0 flex items-center justify-center overflow-hidden border border-rose-400/30">
+            <span id="spotlight-badge" class="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded">BUG</span>
+            <img id="spotlight-img" src="" alt="Produto Spotlight" class="max-h-full max-w-full object-contain">
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-600 text-white uppercase tracking-wider animate-pulse">
+                🚨 MAIOR OPORTUNIDADE DO MOMENTO
+              </span>
+              <span id="spotlight-category" class="text-xs text-slate-400">Categoria</span>
+            </div>
+            <h3 id="spotlight-title" class="text-base sm:text-lg font-bold text-white mt-1 line-clamp-1">Nome do Produto em Destaque</h3>
+            <div class="flex items-baseline gap-3 mt-1">
+              <span class="text-xs text-slate-400 line-through" id="spotlight-old-price">De R$ 0,00</span>
+              <span class="text-xl sm:text-2xl font-black text-emerald-400" id="spotlight-new-price">Por R$ 0,00</span>
+              <span class="text-xs font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded" id="spotlight-discount">-90% OFF</span>
+              <span class="text-xs font-semibold text-amber-300 hidden sm:inline" id="spotlight-savings">Economia de R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <a id="spotlight-link" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 md:flex-initial text-center px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-sm shadow-xl shadow-rose-950/60 transition active:scale-95 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cart-shopping"></i> Comprar Agora no Site
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER & CONTROLS SECTION -->
+    <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+      
+      <!-- DEPARTMENTS SELECTOR -->
+      <div>
+        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2 block">
+          Departamentos:
+        </span>
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+          <button onclick="setDepartment('todos')" id="dept-todos" class="dept-btn px-4 py-1.5 rounded-full font-bold whitespace-nowrap bg-indigo-600 text-white border border-indigo-500 transition shadow-sm">
+            🌐 Todo o Site
+          </button>
+          <button onclick="setDepartment('Dermo e Beleza')" id="dept-dermo" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            ✨ Dermo & Beleza
+          </button>
+          <button onclick="setDepartment('Medicamentos e Saúde')" id="dept-med" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            💊 Medicamentos & Saúde
+          </button>
+          <button onclick="setDepartment('Higiene Pessoal')" id="dept-higiene" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🧴 Higiene Pessoal
+          </button>
+          <button onclick="setDepartment('Mamães e Bebês')" id="dept-bebes" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            👶 Mamães & Bebês
+          </button>
+          <button onclick="setDepartment('Vida Saudável')" id="dept-vida" class="dept-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🥗 Suplementos & Vitaminas
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Action Pills + BOTÃO IGNORAR MEDICAMENTOS -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs border-t border-slate-800/80 pt-3">
+        
+        <!-- BOTÃO IGNORAR MEDICAMENTOS -->
+        <button onclick="toggleExcludeMedicines()" id="btn-exclude-meds" class="px-4 py-1.5 rounded-full font-bold whitespace-nowrap border transition flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700">
+          <i id="icon-exclude-meds" class="fa-solid fa-ban text-slate-400"></i>
+          <span>Ignorar Medicamentos</span>
+        </button>
+
+        <span class="text-slate-600">|</span>
+
+        <button onclick="setQuickFilter('all_70')" id="pill-all_70" class="pill-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-rose-600 text-white border border-rose-500 transition">
+          🔥 Todos &ge; 70% OFF
+        </button>
+        <button onclick="setQuickFilter('bugs_only')" id="pill-bugs_only" class="pill-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          🚨 Apenas PromoBugs
+        </button>
+        <button onclick="setQuickFilter('80_plus')" id="pill-80_plus" class="pill-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          ⚡ 80%+ Brutal
+        </button>
+        <button onclick="setQuickFilter('perfumes')" id="pill-perfumes" class="pill-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          🧴 Perfumes Importados
+        </button>
+        <button onclick="toggleInStockOnly()" id="pill-stock" class="pill-btn px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-box-archive"></i> Em Estoque
+        </button>
+      </div>
+
+      <!-- Advanced Filters Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-slate-800/80">
+        
+        <div class="relative lg:col-span-2">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" id="search-input" oninput="debounceSearch()" placeholder="Buscar produto ou marca (ex: Calvin Klein, Carmed, Pampers, Whey)..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-rose-500 transition">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+            Desconto Mínimo: <span id="min-discount-label" class="text-rose-400 font-extrabold text-xs">70%</span>
+          </label>
+          <input type="range" id="min-discount" min="0" max="95" step="5" value="70" oninput="onDiscountSliderChange(this.value)" class="w-full accent-rose-500 cursor-pointer h-2 bg-slate-800 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Ordenar por</label>
+          <select id="sort-select" onchange="resetAndFetch()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
+            <option value="discount_desc">🔥 Maior Desconto (%)</option>
+            <option value="savings_desc">💰 Maior Economia (R$)</option>
+            <option value="price_asc">💸 Menor Preço (Centavos Primeiro)</option>
+            <option value="bug_score_desc">🚨 Maior Score de PromoBug</option>
+            <option value="recent">⏱️ Adicionados Recentemente</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Preço Máximo (R$)</label>
+          <select id="max-price-select" onchange="resetAndFetch()" class="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-rose-500 transition">
+            <option value="">Qualquer Valor</option>
+            <option value="10">Até R$ 10,00</option>
+            <option value="25">Até R$ 25,00</option>
+            <option value="50">Até R$ 50,00</option>
+            <option value="100">Até R$ 100,00</option>
+            <option value="300">Até R$ 300,00</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Results Count Bar -->
+      <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+        <div>
+          Encontrados: <span id="count-total" class="font-bold text-white">0</span> ofertas com <span id="count-discount" class="text-rose-400 font-bold">&ge; 70%</span>
+          <span id="filter-meds-indicator" class="hidden ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            🚫 Sem Medicamentos
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Rolagem Infinita Ativa
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PRODUCTS GRID -->
+    <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    </div>
+
+    <!-- INFINITE SCROLL LOADER / STATUS -->
+    <div id="scroll-loader" class="py-8 text-center">
+      <div id="loading-spinner" class="hidden items-center justify-center gap-3 text-slate-400 text-sm font-semibold">
+        <i class="fa-solid fa-spinner animate-spin text-rose-500 text-xl"></i>
+        <span>Carregando mais ofertas...</span>
+      </div>
+      <div id="end-of-results" class="hidden text-slate-500 text-xs font-medium">
+        🎉 Você visualizou todas as ofertas encontradas!
+      </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="hidden text-center py-16 glass-card rounded-2xl border border-slate-800">
+      <div class="w-16 h-16 rounded-full bg-slate-800 mx-auto flex items-center justify-center text-slate-400 text-2xl mb-3">
+        <i class="fa-solid fa-filter-circle-xmark"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white">Nenhuma oferta encontrada com esses filtros</h3>
+      <p class="text-sm text-slate-400 mt-1 max-w-md mx-auto">
+        Tente reduzir o desconto mínimo ou desativar o filtro "Ignorar Medicamentos".
+      </p>
+      <button onclick="resetFilters()" class="mt-4 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 font-semibold text-xs border border-slate-700 transition">
+        Restaurar Filtros Padrão
+      </button>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="glass-card border-t border-slate-800/80 py-6 mt-12 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Monitorando Todo o Site Oficial da Pague Menos</span>
+      </div>
+      <div>
+        Auto-Radar 24/7 &bull; Rolagem Infinita &bull; FastAPI + SQLite
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // State
+    let currentDepartment = 'todos';
+    let currentFilter = 'all_70';
+    let minDiscount = 70.0;
+    let inStockOnly = false;
+    let promoBugOnly = false;
+    let excludeMedicines = false;
+    let currentCategory = '';
+    let currentPage = 1;
+    let pageSize = 24;
+    let totalPages = 1;
+    let isLoading = false;
+    let hasMore = true;
+    let searchTimeout = null;
+    let soundEnabled = true;
+
+    // Web Audio alert
+    function playAlertSound() {
+      if (!soundEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-emerald-400';
+        showToast('Alerta sonoro ativado!', 'success');
+        playAlertSound();
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        showToast('Alerta sonoro silenciado', 'info');
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+      
+      toastMsg.innerText = msg;
+      if (type === 'success') {
+        toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+      } else if (type === 'warning') {
+        toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+      } else {
+        toastIcon.className = 'fa-solid fa-circle-info text-blue-400 text-lg';
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    // TOGGLE IGNORAR MEDICAMENTOS
+    function toggleExcludeMedicines() {
+      excludeMedicines = !excludeMedicines;
+      const btn = document.getElementById('btn-exclude-meds');
+      const icon = document.getElementById('icon-exclude-meds');
+      const indicator = document.getElementById('filter-meds-indicator');
+
+      if (excludeMedicines) {
+        btn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+        btn.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/40');
+        icon.className = 'fa-solid fa-ban text-white';
+        indicator.classList.remove('hidden');
+        showToast('Medicamentos ocultados das promoções!', 'info');
+      } else {
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+        btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/40');
+        icon.className = 'fa-solid fa-ban text-slate-400';
+        indicator.classList.add('hidden');
+        showToast('Medicamentos incluídos novamente', 'info');
+      }
+
+      resetAndFetch();
+    }
+
+    function setDepartment(dept) {
+      currentDepartment = dept;
+      document.querySelectorAll('.dept-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-500');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      });
+
+      const map = {
+        'todos': 'dept-todos',
+        'Dermo e Beleza': 'dept-dermo',
+        'Medicamentos e Saúde': 'dept-med',
+        'Higiene Pessoal': 'dept-higiene',
+        'Mamães e Bebês': 'dept-bebes',
+        'Vida Saudável': 'dept-vida'
+      };
+
+      const btnId = map[dept];
+      if (btnId) {
+        const activeBtn = document.getElementById(btnId);
+        if (activeBtn) {
+          activeBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          activeBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-500');
+        }
+      }
+
+      resetAndFetch();
+    }
+
+    function setQuickFilter(type) {
+      currentFilter = type;
+      document.querySelectorAll('.pill-btn').forEach(btn => {
+        btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      });
+
+      const activeBtn = document.getElementById(`pill-${type}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+        activeBtn.classList.add('bg-rose-600', 'text-white', 'border-rose-500');
+      }
+
+      promoBugOnly = false;
+      currentCategory = '';
+      
+      if (type === 'all_70') {
+        minDiscount = 70.0;
+      } else if (type === 'bugs_only') {
+        promoBugOnly = true;
+        minDiscount = 0.0;
+      } else if (type === '80_plus') {
+        minDiscount = 80.0;
+      } else if (type === 'perfumes') {
+        currentCategory = 'Perfumes';
+        minDiscount = 60.0;
+      }
+
+      document.getElementById('min-discount').value = minDiscount;
+      document.getElementById('min-discount-label').innerText = `${minDiscount}%`;
+      resetAndFetch();
+    }
+
+    function toggleInStockOnly() {
+      inStockOnly = !inStockOnly;
+      const btn = document.getElementById('pill-stock');
+      if (inStockOnly) {
+        btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
+        btn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      } else {
+        btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      }
+      resetAndFetch();
+    }
+
+    function onDiscountSliderChange(val) {
+      minDiscount = parseFloat(val);
+      document.getElementById('min-discount-label').innerText = `${minDiscount}%`;
+      resetAndFetch();
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        resetAndFetch();
+      }, 350);
+    }
+
+    function resetFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('max-price-select').value = '';
+      document.getElementById('sort-select').value = 'discount_desc';
+      inStockOnly = false;
+      const stockBtn = document.getElementById('pill-stock');
+      stockBtn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+      stockBtn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+      if (excludeMedicines) {
+        toggleExcludeMedicines();
+      }
+      setDepartment('todos');
+      setQuickFilter('all_70');
+    }
+
+    function resetAndFetch() {
+      currentPage = 1;
+      hasMore = true;
+      document.getElementById('products-grid').innerHTML = '';
+      document.getElementById('end-of-results').classList.add('hidden');
+      fetchPromos(false);
+    }
+
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        
+        document.getElementById('kpi-bugs').innerText = data.bugs || 0;
+        document.getElementById('kpi-promos').innerText = data.over_70 || 0;
+        document.getElementById('kpi-stock').innerText = data.in_stock_70 || 0;
+        document.getElementById('kpi-savings').innerText = `R$ ${(data.max_savings || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+        if (data.last_scan && data.last_scan.timestamp) {
+          const date = new Date(data.last_scan.timestamp);
+          document.getElementById('last-update-text').innerText = `Atualizado às ${date.toLocaleTimeString('pt-BR')}`;
+        }
+
+        const scanBtn = document.getElementById('scan-btn');
+        const scanIcon = document.getElementById('scan-icon');
+        const scanText = document.getElementById('scan-btn-text');
+
+        if (data.is_scanning) {
+          scanBtn.disabled = true;
+          scanBtn.classList.add('opacity-75', 'cursor-not-allowed');
+          scanIcon.classList.add('animate-spin');
+          scanText.innerText = 'Varrendo...';
+        } else {
+          scanBtn.disabled = false;
+          scanBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+          scanIcon.classList.remove('animate-spin');
+          scanText.innerText = 'Escanear Agora';
+        }
+      } catch (e) {
+        console.error('Erro ao buscar estatísticas:', e);
+      }
+    }
+
+    async function triggerScan() {
+      try {
+        const scanBtn = document.getElementById('scan-btn');
+        const scanIcon = document.getElementById('scan-icon');
+        const scanText = document.getElementById('scan-btn-text');
+        
+        scanBtn.disabled = true;
+        scanIcon.classList.add('animate-spin');
+        scanText.innerText = 'Varrendo...';
+        
+        const res = await fetch('/api/scan', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Varredura geral iniciada!', 'info');
+
+        let checkCount = 0;
+        const interval = setInterval(async () => {
+          checkCount++;
+          const statsRes = await fetch('/api/stats');
+          const statsData = await statsRes.json();
+          fetchStats();
+
+          if (!statsData.is_scanning || checkCount > 25) {
+            clearInterval(interval);
+            showToast('Varredura completa concluída!', 'success');
+            playAlertSound();
+            resetAndFetch();
+          }
+        }, 2000);
+
+      } catch (e) {
+        showToast('Erro ao iniciar varredura', 'warning');
+      }
+    }
+
+    // FETCH PRODUTOS (COM SUPORTE A ROLAGEM INFINITA)
+    async function fetchPromos(append = false) {
+      if (isLoading) return;
+      isLoading = true;
+
+      const grid = document.getElementById('products-grid');
+      const emptyState = document.getElementById('empty-state');
+      const spinner = document.getElementById('loading-spinner');
+      const endMessage = document.getElementById('end-of-results');
+
+      spinner.classList.remove('hidden');
+      spinner.classList.add('flex');
+
+      const search = document.getElementById('search-input').value.trim();
+      const maxPrice = document.getElementById('max-price-select').value;
+      const sort = document.getElementById('sort-select').value;
+
+      let url = `/api/promos?min_discount=${minDiscount}&sort=${sort}&page=${currentPage}&limit=${pageSize}`;
+      if (inStockOnly) url += '&in_stock_only=true';
+      if (promoBugOnly) url += '&promobug_only=true';
+      if (excludeMedicines) url += '&exclude_medicines=true';
+      if (currentDepartment && currentDepartment !== 'todos') url += `&department=${encodeURIComponent(currentDepartment)}`;
+      if (currentCategory) url += `&category=${encodeURIComponent(currentCategory)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (maxPrice) url += `&max_price=${maxPrice}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        totalPages = data.total_pages || 1;
+        document.getElementById('count-total').innerText = data.total;
+        document.getElementById('count-discount').innerText = `≥ ${minDiscount}%`;
+
+        if (!data.products || data.products.length === 0) {
+          if (!append) {
+            grid.innerHTML = '';
+            emptyState.classList.remove('hidden');
+          }
+          hasMore = false;
+          spinner.classList.add('hidden');
+          spinner.classList.remove('flex');
+          isLoading = false;
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        if (currentPage === 1 && data.products.length > 0) {
+          const topBug = data.products.find(p => p.is_bug) || data.products[0];
+          renderSpotlight(topBug);
+        }
+
+        const cardsHtml = data.products.map(p => renderCard(p)).join('');
+        if (append) {
+          grid.insertAdjacentHTML('beforeend', cardsHtml);
+        } else {
+          grid.innerHTML = cardsHtml;
+        }
+
+        if (currentPage >= totalPages) {
+          hasMore = false;
+          endMessage.classList.remove('hidden');
+        } else {
+          hasMore = true;
+          endMessage.classList.add('hidden');
+        }
+
+      } catch (e) {
+        console.error('Erro ao carregar promoções:', e);
+      } finally {
+        spinner.classList.add('hidden');
+        spinner.classList.remove('flex');
+        isLoading = false;
+      }
+    }
+
+    // LISTENER DE ROLAGEM INFINITA
+    window.addEventListener('scroll', () => {
+      // Back to top visibility
+      const backBtn = document.getElementById('back-to-top');
+      if (window.scrollY > 400) {
+        backBtn.classList.remove('opacity-0', 'pointer-events-none');
+        backBtn.classList.add('opacity-100');
+      } else {
+        backBtn.classList.add('opacity-0', 'pointer-events-none');
+        backBtn.classList.remove('opacity-100');
+      }
+
+      // Infinite scroll trigger when reaching 700px before page end
+      if ((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 700)) {
+        if (!isLoading && hasMore && currentPage < totalPages) {
+          currentPage++;
+          fetchPromos(true);
+        }
+      }
+    });
+
+    function renderSpotlight(p) {
+      if (!p) return;
+      const banner = document.getElementById('spotlight-banner');
+      banner.classList.remove('hidden');
+
+      document.getElementById('spotlight-title').innerText = p.name;
+      document.getElementById('spotlight-category').innerText = `${p.brand || 'Pague Menos'} • ${p.department || 'Geral'} > ${p.category || 'Oferta'}`;
+      document.getElementById('spotlight-old-price').innerText = `De R$ ${p.list_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+      document.getElementById('spotlight-new-price').innerText = `Por R$ ${p.sell_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+      document.getElementById('spotlight-discount').innerText = `-${p.discount_pct}% OFF`;
+      document.getElementById('spotlight-savings').innerText = `Economia de R$ ${p.savings.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+      document.getElementById('spotlight-link').href = p.link;
+      document.getElementById('spotlight-img').src = p.image || 'https://via.placeholder.com/150';
+    }
+
+    function renderCard(p) {
+      const isBug = p.is_bug === 1 || p.is_bug === true;
+      const reasons = p.bug_reasons || [];
+      const imageSrc = p.image || 'https://via.placeholder.com/200?text=Sem+Foto';
+
+      const reasonsHtml = reasons.slice(0, 2).map(r => `
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/25">
+          ${r}
+        </span>
+      `).join('');
+
+      return `
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between relative group transition duration-300 hover:-translate-y-1 hover:border-slate-700 ${isBug ? 'border-rose-500/40 bug-pulse' : 'border-slate-800'}">
+          
+          <div class="flex items-start justify-between gap-2 mb-2 z-10">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-black tracking-wide ${p.discount_pct >= 80 ? 'bg-gradient-to-r from-rose-600 to-amber-500 text-white' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
+              -${p.discount_pct}% OFF
+            </span>
+            ${isBug ? `
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white flex items-center gap-1 shadow-md shadow-rose-950">
+                <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> PROMOBUG
+              </span>
+            ` : ''}
+          </div>
+
+          <div class="relative w-full h-44 bg-white rounded-xl p-3 flex items-center justify-center overflow-hidden mb-3">
+            <img src="${imageSrc}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300" loading="lazy" onerror="this.src='https://via.placeholder.com/200?text=Pague+Menos'">
+            ${!p.available ? `
+              <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px] flex items-center justify-center">
+                <span class="px-3 py-1 rounded-md bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700">Esgotado Online</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="flex-1 flex flex-col">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span class="font-bold text-slate-300 truncate max-w-[130px]">${p.brand || 'Pague Menos'}</span>
+              <span class="truncate max-w-[120px] text-indigo-400 font-medium">${p.department || 'Geral'}</span>
+            </div>
+
+            <h4 class="text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-rose-400 transition" title="${p.name}">
+              ${p.name}
+            </h4>
+
+            <div class="flex flex-wrap gap-1 my-2">
+              ${reasonsHtml}
+            </div>
+
+            <div class="mt-auto pt-3 border-t border-slate-800/80">
+              <div class="flex items-baseline justify-between">
+                <span class="text-xs text-slate-400 line-through">
+                  De R$ ${p.list_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </span>
+                <span class="text-[11px] font-semibold text-emerald-400">
+                  Economia R$ ${p.savings.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span class="text-xs font-bold text-emerald-400">R$</span>
+                <span class="text-2xl font-black text-emerald-400 tracking-tight">
+                  ${p.sell_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-2 text-[11px] flex items-center gap-1.5 ${p.available ? 'text-emerald-400' : 'text-slate-500'}">
+              <span class="w-1.5 h-1.5 rounded-full ${p.available ? 'bg-emerald-400' : 'bg-slate-600'}"></span>
+              ${p.available ? `Em estoque (${p.stock_quantity} un)` : 'Indisponível no momento'}
+            </div>
+
+            <div class="grid grid-cols-5 gap-2 mt-3 pt-2">
+              <a href="${p.link}" target="_blank" rel="noopener noreferrer" class="col-span-4 text-center py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-950/40 transition active:scale-95 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cart-shopping"></i> Pegar Oferta
+              </a>
+              <button onclick='copyDeal(${JSON.stringify(p).replace(/'/g, "&apos;")})' title="Copiar texto para WhatsApp / Grupos de Oferta" class="col-span-1 flex items-center justify-center py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">
+                <i class="fa-solid fa-share-nodes text-xs"></i>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      `;
+    }
+
+    function copyDeal(p) {
+      const isBug = p.is_bug === 1 || p.is_bug === true;
+      const text = 
+`🚨 *${isBug ? 'PROMOBUG DETECTADO' : 'SUPER PROMOÇÃO'} NA PAGUE MENOS!* 🚨
+🏷️ *${p.name}* (${p.department || 'Geral'})
+💸 *De:* ~R$ ${p.list_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}~
+🔥 *Por:* R$ ${p.sell_price.toLocaleString('pt-BR', {minimumFractionDigits: 2})} (*-${p.discount_pct}% OFF*)
+💰 *Economia:* R$ ${p.savings.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+📦 *Estoque:* ${p.available ? `${p.stock_quantity} unidades` : 'Corra antes que acabe'}
+
+🔗 *Link:* ${p.link}`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Oferta copiada para a Área de Transferência!', 'success');
+      }).catch(() => {
+        showToast('Não foi possível copiar', 'warning');
+      });
+    }
+
+    function downloadCSV() {
+      let url = `/api/export/csv?min_discount=${minDiscount}`;
+      if (excludeMedicines) url += '&exclude_medicines=true';
+      if (currentDepartment && currentDepartment !== 'todos') url += `&department=${encodeURIComponent(currentDepartment)}`;
+      if (inStockOnly) url += '&in_stock_only=true';
+      if (promoBugOnly) url += '&promobug_only=true';
+      window.open(url, '_blank');
+      showToast('Download do arquivo CSV iniciado!', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchStats();
+      fetchPromos();
+      setInterval(fetchStats, 20000);
+    });
+  </script>
+</body>
+</html>

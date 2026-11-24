@@ -1,0 +1,33 @@
+name: Pague Menos Radar Monitor
+
+on:
+  schedule:
+    # Executa a cada 30 minutos automaticamente
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Permite disparar manualmente pelo GitHub
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Dependências
+        run: pip install -r requirements.txt
+
+      - name: Executar Varredura
+        run: python scanner.py
+
+      - name: Commit e Push dos Dados Atualizados
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add promos.db
+          git commit -m "Auto-update: Varredura de promoções e bugs [skip ci]" || exit 0
+          git push

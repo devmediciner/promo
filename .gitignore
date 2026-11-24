@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+page_sample.html
+page_decompressed.html
+inspect_site.py
+compare_apis.py
+test_*.py
+verify_*.py
+scan_discounts.py
+analyze_vtex.py
